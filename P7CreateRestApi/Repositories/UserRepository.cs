@@ -1,8 +1,8 @@
-using Dot.Net.WebApi.Data;
-using Dot.Net.WebApi.Domain;
+using FindexiumAPI.Data;
+using FindexiumAPI.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace Dot.Net.WebApi.Repositories
+namespace FindexiumAPI.Repositories
 {
     public class UserRepository
     {

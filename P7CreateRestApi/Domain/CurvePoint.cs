@@ -1,4 +1,4 @@
-namespace Dot.Net.WebApi.Domain
+namespace FindexiumAPI.Domain
 {
     public class CurvePoint
     {

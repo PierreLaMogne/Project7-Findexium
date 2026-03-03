@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using P7CreateRestApi.Models;
+using FindexiumAPI.Models;
 
-namespace Dot.Net.WebApi.Controllers
+namespace FindexiumAPI.Controllers
 {
     [ApiController]
     [Route("[controller]")]

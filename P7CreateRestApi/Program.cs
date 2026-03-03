@@ -1,4 +1,4 @@
-using Dot.Net.WebApi.Data;
+using FindexiumAPI.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

@@ -1,4 +1,4 @@
-namespace Dot.Net.WebApi.Controllers
+namespace FindexiumAPI.Domain
 {
     public class RuleName
     {

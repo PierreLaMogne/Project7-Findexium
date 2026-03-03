@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Dot.Net.WebApi.Domain;
+using FindexiumAPI.Domain;
 
-namespace Dot.Net.WebApi.Data
+namespace FindexiumAPI.Data
 {
     public class LocalDbContext : DbContext
     {

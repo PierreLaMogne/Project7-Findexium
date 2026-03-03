@@ -1,8 +1,8 @@
-using Dot.Net.WebApi.Domain;
-using Dot.Net.WebApi.Repositories;
+using FindexiumAPI.Domain;
+using FindexiumAPI.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Dot.Net.WebApi.Controllers
+namespace FindexiumAPI.Controllers
 {
     [ApiController]
     [Route("[controller]")]
