@@ -1,4 +1,4 @@
-﻿namespace P7CreateRestApi.Models
+﻿namespace FindexiumAPI.Models
 {
     public class LoginModel
     {

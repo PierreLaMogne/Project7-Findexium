@@ -1,6 +1,6 @@
-namespace FindexiumAPI.Domain
+﻿namespace FindexiumAPI.Models
 {
-    public class Trade
+    public class TradeDto
     {
         public int TradeId { get; set; }
         public string Account { get; set; } = string.Empty;
@@ -24,4 +24,5 @@ namespace FindexiumAPI.Domain
         public string SourceListId { get; set; } = string.Empty;
         public string Side { get; set; } = string.Empty;
     }
+
 }

@@ -9,7 +9,7 @@
     }
   },
   "profiles": {
-    "P7CreateRestApi": {
+    "FindexiumAPI": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace Dot.Net.WebApi.Controllers
+namespace FindexiumAPI.Controllers
 {
     [ApiController]
     [Route("[controller]")]
