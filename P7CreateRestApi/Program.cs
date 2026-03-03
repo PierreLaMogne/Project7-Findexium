@@ -1,4 +1,6 @@
 using FindexiumAPI.Data;
+using FindexiumAPI.Domain;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +15,10 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<LocalDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddIdentity<User, IdentityRole>()
+                .AddEntityFrameworkStores<LocalDbContext>()
+                .AddDefaultTokenProviders();
 
 var app = builder.Build();
 

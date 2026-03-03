@@ -1,9 +1,10 @@
-using Microsoft.EntityFrameworkCore;
 using FindexiumAPI.Domain;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace FindexiumAPI.Data
 {
-    public class LocalDbContext : DbContext
+    public class LocalDbContext : IdentityDbContext<User>
     {
         public LocalDbContext(DbContextOptions<LocalDbContext> options) : base(options) { }
 
@@ -12,6 +13,10 @@ namespace FindexiumAPI.Data
             base.OnModelCreating(builder);
         }
 
-        public DbSet<User> Users { get; set;}
+        public DbSet<BidList> BidLists { get; set; }
+        public DbSet<CurvePoint> CurvePoints { get; set; }
+        public DbSet<Rating> Ratings { get; set; }
+        public DbSet<RuleName> RuleNames { get; set; }
+        public DbSet<Trade> Trades { get; set; }
     }
 }
