@@ -1,40 +1,78 @@
-using FindexiumAPI.Domain;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using FindexiumAPI.Models;
+using FindexiumAPI.Repositories;
 
 namespace FindexiumAPI.Controllers
 {
+    [Route("api/[controller]")]
     [ApiController]
-    [Route("[controller]")]
     public class BidListController : ControllerBase
     {
-        [HttpGet]
-        [Route("validate")]
-        public IActionResult Validate([FromBody] BidList bidList)
+        private readonly IBidListRepository _repository;
+
+        public BidListController(IBidListRepository bidListRepository)
         {
-            // TODO: check data valid and save to db, after saving return bid list
-            return Ok();
+            _repository = bidListRepository;
         }
 
+        // GET: api/BidList
         [HttpGet]
-        [Route("update/{id}")]
-        public IActionResult ShowUpdateForm(int id)
+        public async Task<ActionResult<IEnumerable<BidListDto>>> GetBidLists()
         {
-            return Ok();
+            var bidLists = await _repository.GetAllAsync();
+            return Ok(bidLists);
         }
 
+        // GET: api/BidList/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<BidListDto>> GetBidList(int id)
+        {
+            var bidList = await _repository.GetByIdAsync(id);
+            if (bidList == null)
+                return NotFound("The Id mentioned does not exist.");
+
+            return Ok(bidList);
+        }
+
+        // PUT: api/BidList/5
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutBidList(int id, BidListDto bidList)
+        {
+            if (id != bidList.BidListId)
+                return BadRequest("The Id focused and the Id mentioned are different.");
+
+            if (!ModelState.IsValid)
+                return BadRequest("Informations mentionned are not valid.");
+
+            var updated = await _repository.UpdateAsync(id, bidList);
+            if (!updated)
+                return NotFound("The Id mentioned does not exist.");
+
+            return NoContent();
+        }
+
+        // POST: api/BidList
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        [Route("update/{id}")]
-        public IActionResult UpdateBid(int id, [FromBody] BidList bidList)
+        public async Task<ActionResult<BidListDto>> PostBidList(BidListDto bidList)
         {
-            // TODO: check required fields, if valid call service to update Bid and return list Bid
-            return Ok();
+            if (!ModelState.IsValid)
+                return BadRequest("Informations mentionned are not valid.");
+
+            var createdBidList = await _repository.AddAsync(bidList);
+            return CreatedAtAction(nameof(GetBidList), new { id = createdBidList.BidListId }, createdBidList);
         }
 
-        [HttpDelete]
-        [Route("{id}")]
-        public IActionResult DeleteBid(int id)
+        // DELETE: api/BidList/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteBidList(int id)
         {
-            return Ok();
+            var deleted = await _repository.DeleteAsync(id);
+            if (!deleted)
+                return NotFound("The Id mentioned does not exist.");
+
+            return NoContent();
         }
     }
 }

@@ -1,59 +1,70 @@
-using FindexiumAPI.Domain;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using FindexiumAPI.Models;
+using FindexiumAPI.Repositories;
 
 namespace FindexiumAPI.Controllers
 {
+    [Route("api/[controller]")]
     [ApiController]
-    [Route("[controller]")]
     public class TradeController : ControllerBase
     {
-        // TODO: Inject Trade service
-
-        [HttpGet]
-        [Route("list")]
-        public IActionResult Home()
+        private readonly ITradeRepository _repository;
+        public TradeController(ITradeRepository tradeRepository)
         {
-            // TODO: find all Trade, add to model
-            return Ok();
+            _repository = tradeRepository;
         }
 
         [HttpGet]
-        [Route("add")]
-        public IActionResult AddTrade([FromBody]Trade trade)
+        public async Task<ActionResult<IEnumerable<TradeDto>>> GetTrades()
         {
-            return Ok();
+            var trades = await _repository.GetAllAsync();
+            return Ok(trades);
         }
 
-        [HttpGet]
-        [Route("validate")]
-        public IActionResult Validate([FromBody]Trade trade)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<TradeDto>> GetTrade(int id)
         {
-            // TODO: check data valid and save to db, after saving return Trade list
-            return Ok();
-        }
+            var trade = await _repository.GetByIdAsync(id);
+            if (trade == null)
+                return NotFound("The Id mentioned does not exist.");
 
-        [HttpGet]
-        [Route("update/{id}")]
-        public IActionResult ShowUpdateForm(int id)
-        {
-            // TODO: get Trade by Id and to model then show to the form
-            return Ok();
+            return Ok(trade);
         }
 
         [HttpPost]
-        [Route("update/{id}")]
-        public IActionResult UpdateTrade(int id, [FromBody] Trade trade)
+        public async Task<ActionResult<TradeDto>> PostTrade(TradeDto trade)
         {
-            // TODO: check required fields, if valid call service to update Trade and return Trade list
-            return Ok();
+            if (!ModelState.IsValid)
+                return BadRequest("Informations mentionned are not valid.");
+
+            var createdTrade = await _repository.AddAsync(trade);
+            return CreatedAtAction(nameof(GetTrade), new { id = createdTrade.TradeId }, createdTrade);
         }
 
-        [HttpDelete]
-        [Route("{id}")]
-        public IActionResult DeleteTrade(int id)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutTrade(int id, TradeDto trade)
         {
-            // TODO: Find Trade by Id and delete the Trade, return to Trade list
-            return Ok();
+            if (id != trade.TradeId)
+                return BadRequest("The Id focused and the Id mentioned are different.");
+
+            if (!ModelState.IsValid)
+                return BadRequest("Informations mentionned are not valid.");
+
+            var updated = await _repository.UpdateAsync(id, trade);
+            if (!updated)
+                return NotFound("The Id mentioned does not exist.");
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTrade(int id)
+        {
+            var deleted = await _repository.DeleteAsync(id);
+            if (!deleted)
+                return NotFound("The Id mentioned does not exist.");
+
+            return NoContent();
         }
     }
 }
