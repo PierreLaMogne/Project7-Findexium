@@ -6,54 +6,54 @@ namespace FindexiumAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class RatingController : ControllerBase
+    public class CurvePointController : ControllerBase
     {
-        private readonly IRatingRepository _repository;
+        private readonly ICurvePointRepository _repository;
 
-        public RatingController(IRatingRepository ratingRepository)
+        public CurvePointController(ICurvePointRepository curvePointRepository)
         {
-            _repository = ratingRepository;
+            _repository = curvePointRepository;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<RatingDto>>> GetRatings()
+        public async Task<ActionResult<IEnumerable<CurvePointDto>>> GetCurvePoints()
         {
-            var ratings = await _repository.GetAllAsync();
-            return Ok(ratings);
+            var curvePoints = await _repository.GetAllAsync();
+            return Ok(curvePoints);
         }
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<ActionResult<RatingDto>> GetRating(int id)
+        public async Task<ActionResult<CurvePointDto>> GetCurvePoint(int id)
         {
-            var rating = await _repository.GetByIdAsync(id);
-            if (rating == null)
+            var curvePoint = await _repository.GetByIdAsync(id);
+            if (curvePoint == null)
                 return NotFound("The Id mentioned does not exist.");
 
-            return Ok(rating);
+            return Ok(curvePoint);
         }
 
         [HttpPost]
-        public async Task<ActionResult<RatingDto>> PostRating(RatingDto rating)
+        public async Task<ActionResult<CurvePointDto>> PostCurvePoint(CurvePointDto curvePoint)
         {
             if (!ModelState.IsValid)
                 return BadRequest("Informations mentionned are not valid.");
 
-            var createdRating = await _repository.AddAsync(rating);
-            return CreatedAtAction(nameof(GetRating), new { id = createdRating.Id }, createdRating);
+            var createdCurvePoint = await _repository.AddAsync(curvePoint);
+            return CreatedAtAction(nameof(GetCurvePoint), new { id = createdCurvePoint.Id }, createdCurvePoint);
         }
 
         [HttpPut]
         [Route("{id}")]
-        public async Task<IActionResult> PutRating(int id, RatingDto rating)
+        public async Task<IActionResult> PutCurvePoint(int id, CurvePointDto curvePoint)
         {
-            if (id != rating.Id)
+            if (id != curvePoint.Id)
                 return BadRequest("The Id focused and the Id mentioned are different.");
 
             if (!ModelState.IsValid)
                 return BadRequest("Informations mentionned are not valid.");
 
-            var updated = await _repository.UpdateAsync(id, rating);
+            var updated = await _repository.UpdateAsync(id, curvePoint);
             if (!updated)
                 return NotFound("The Id mentioned does not exist.");
 
@@ -62,7 +62,7 @@ namespace FindexiumAPI.Controllers
 
         [HttpDelete]
         [Route("{id}")]
-        public async Task<IActionResult> DeleteRating(int id)
+        public async Task<IActionResult> DeleteCurvePoint(int id)
         {
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)

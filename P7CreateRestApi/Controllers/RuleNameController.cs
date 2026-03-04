@@ -1,59 +1,71 @@
-using Microsoft.AspNetCore.Mvc;
-using FindexiumAPI.Domain;
+﻿using Microsoft.AspNetCore.Mvc;
+using FindexiumAPI.Models;
+using FindexiumAPI.Repositories;
 
 namespace FindexiumAPI.Controllers
 {
+    [Route("api/[controller]")]
     [ApiController]
-    [Route("[controller]")]
     public class RuleNameController : ControllerBase
     {
-        // TODO: Inject RuleName service
+        private readonly IRuleNameRepository _repository;
 
-        [HttpGet]
-        [Route("list")]
-        public IActionResult Home()
+        public RuleNameController(IRuleNameRepository ruleNameRepository)
         {
-            // TODO: find all RuleName, add to model
-            return Ok();
+            _repository = ruleNameRepository;
         }
 
         [HttpGet]
-        [Route("add")]
-        public IActionResult AddRuleName([FromBody]RuleName trade)
+        public async Task<ActionResult<IEnumerable<RuleNameDto>>> GetRuleNames()
         {
-            return Ok();
+            var ruleNames = await _repository.GetAllAsync();
+            return Ok(ruleNames);
         }
 
-        [HttpGet]
-        [Route("validate")]
-        public IActionResult Validate([FromBody]RuleName trade)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<RuleNameDto>> GetRuleName(int id)
         {
-            // TODO: check data valid and save to db, after saving return RuleName list
-            return Ok();
-        }
+            var ruleName = await _repository.GetByIdAsync(id);
+            if (ruleName == null)
+                return NotFound("The Id mentioned does not exist.");
 
-        [HttpGet]
-        [Route("update/{id}")]
-        public IActionResult ShowUpdateForm(int id)
-        {
-            // TODO: get RuleName by Id and to model then show to the form
-            return Ok();
+            return Ok(ruleName);
         }
 
         [HttpPost]
-        [Route("update/{id}")]
-        public IActionResult UpdateRuleName(int id, [FromBody] RuleName rating)
+        public async Task<ActionResult<RuleNameDto>> PostRuleName(RuleNameDto ruleName)
         {
-            // TODO: check required fields, if valid call service to update RuleName and return RuleName list
-            return Ok();
+            if (!ModelState.IsValid)
+                return BadRequest("Informations mentionned are not valid.");
+
+            var createdRuleName = await _repository.AddAsync(ruleName);
+            return CreatedAtAction(nameof(GetRuleName), new { id = createdRuleName.Id }, createdRuleName);
         }
 
-        [HttpDelete]
-        [Route("{id}")]
-        public IActionResult DeleteRuleName(int id)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutRuleName(int id, RuleNameDto ruleName)
         {
-            // TODO: Find RuleName by Id and delete the RuleName, return to Rule list
-            return Ok();
+            if (id != ruleName.Id)
+                return BadRequest("The Id focused and the Id mentioned are different.");
+
+            if (!ModelState.IsValid)
+                return BadRequest("Informations mentionned are not valid.");
+
+            var updated = await _repository.UpdateAsync(id, ruleName);
+            if (!updated)
+                return NotFound("The Id mentioned does not exist.");
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteRuleName(int id)
+        {
+            var deleted = await _repository.DeleteAsync(id);
+            if (!deleted)
+                return NotFound("The Id mentioned does not exist.");
+
+            return NoContent();
         }
     }
 }
