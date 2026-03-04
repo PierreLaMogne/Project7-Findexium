@@ -45,6 +45,12 @@ namespace FindexiumAPI.Repositories
 
         public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
         {
+            if (dto.Password != dto.ConfirmPassword)
+                throw new Exception("The Password and the Confirm Password do not match.");
+
+            if (await _userManager.Users.AnyAsync(u => u.UserName == dto.UserName))
+                throw new Exception("The UserName mentioned is already used.");
+
             var user = new User
             {
                 UserName = dto.UserName,
@@ -73,6 +79,12 @@ namespace FindexiumAPI.Repositories
         
         public async Task<UserDto> UpdateUserAsync(string id, UpdateUserDto dto)
         {
+            if (id != dto.Id)
+                throw new Exception("The Id focused and the Id mentioned are different.");
+
+            if (await _userManager.Users.AnyAsync(u => u.UserName == dto.UserName && u.Id != id))
+                throw new Exception("The UserName mentioned is already used by another User.");
+
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
                 throw new Exception("The Id mentioned does not exist.");
