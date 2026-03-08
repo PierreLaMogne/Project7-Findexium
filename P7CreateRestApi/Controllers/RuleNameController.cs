@@ -21,6 +21,9 @@ namespace FindexiumAPI.Controllers
         public async Task<ActionResult<IEnumerable<RuleNameDto>>> GetRuleNames()
         {
             var ruleNames = await _repository.GetAllAsync();
+            if (!ruleNames.Any())
+                return NotFound("No RuleName found.");
+
             return Ok(ruleNames);
         }
 
@@ -60,7 +63,7 @@ namespace FindexiumAPI.Controllers
             if (!updated)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The RuleName mentioned has been updated.");
         }
 
         [HttpDelete("{id}")]
@@ -71,7 +74,7 @@ namespace FindexiumAPI.Controllers
             if (!deleted)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The RuleName mentioned has been deleted.");
         }
     }
 }
