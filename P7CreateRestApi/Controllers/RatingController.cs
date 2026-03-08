@@ -21,6 +21,9 @@ namespace FindexiumAPI.Controllers
         public async Task<ActionResult<IEnumerable<RatingDto>>> GetRatings()
         {
             var ratings = await _repository.GetAllAsync();
+            if (!ratings.Any())
+                return NotFound("No Rating found.");
+
             return Ok(ratings);
         }
 
@@ -62,7 +65,7 @@ namespace FindexiumAPI.Controllers
             if (!updated)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The Rating mentioned has been updated.");
         }
 
         [HttpDelete]
@@ -74,7 +77,7 @@ namespace FindexiumAPI.Controllers
             if (!deleted)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The Rating mentioned has been deleted.");
         }
     }
 }
