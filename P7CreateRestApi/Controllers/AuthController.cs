@@ -39,7 +39,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "User, Admin")]
+        [Authorize(Policy = "Users")]
         [Route("password")]
         public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
         {

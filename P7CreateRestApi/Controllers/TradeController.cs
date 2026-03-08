@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using FindexiumAPI.Models;
+﻿using FindexiumAPI.Models;
 using FindexiumAPI.Repositories;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FindexiumAPI.Controllers
 {
@@ -15,6 +16,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "Users")]
         public async Task<ActionResult<IEnumerable<TradeDto>>> GetTrades()
         {
             var trades = await _repository.GetAllAsync();
@@ -22,6 +24,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = "Users")]
         public async Task<ActionResult<TradeDto>> GetTrade(int id)
         {
             var trade = await _repository.GetByIdAsync(id);
@@ -32,6 +35,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<TradeDto>> PostTrade(TradeDto trade)
         {
             if (!ModelState.IsValid)
@@ -42,6 +46,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PutTrade(int id, TradeDto trade)
         {
             if (id != trade.TradeId)
@@ -58,6 +63,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteTrade(int id)
         {
             var deleted = await _repository.DeleteAsync(id);

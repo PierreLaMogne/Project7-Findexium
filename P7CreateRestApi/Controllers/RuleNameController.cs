@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using FindexiumAPI.Models;
+﻿using FindexiumAPI.Models;
 using FindexiumAPI.Repositories;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FindexiumAPI.Controllers
 {
@@ -16,6 +17,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "Users")]
         public async Task<ActionResult<IEnumerable<RuleNameDto>>> GetRuleNames()
         {
             var ruleNames = await _repository.GetAllAsync();
@@ -23,6 +25,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = "Users")]
         public async Task<ActionResult<RuleNameDto>> GetRuleName(int id)
         {
             var ruleName = await _repository.GetByIdAsync(id);
@@ -33,6 +36,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<RuleNameDto>> PostRuleName(RuleNameDto ruleName)
         {
             if (!ModelState.IsValid)
@@ -43,6 +47,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PutRuleName(int id, RuleNameDto ruleName)
         {
             if (id != ruleName.Id)
@@ -59,6 +64,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteRuleName(int id)
         {
             var deleted = await _repository.DeleteAsync(id);

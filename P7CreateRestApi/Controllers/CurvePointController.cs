@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using FindexiumAPI.Models;
+﻿using FindexiumAPI.Models;
 using FindexiumAPI.Repositories;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FindexiumAPI.Controllers
 {
@@ -16,6 +17,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "Users")]
         public async Task<ActionResult<IEnumerable<CurvePointDto>>> GetCurvePoints()
         {
             var curvePoints = await _repository.GetAllAsync();
@@ -23,6 +25,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "Users")]
         [Route("{id}")]
         public async Task<ActionResult<CurvePointDto>> GetCurvePoint(int id)
         {
@@ -34,6 +37,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<CurvePointDto>> PostCurvePoint(CurvePointDto curvePoint)
         {
             if (!ModelState.IsValid)
@@ -44,6 +48,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpPut]
+        [Authorize(Roles = "Admin")]
         [Route("{id}")]
         public async Task<IActionResult> PutCurvePoint(int id, CurvePointDto curvePoint)
         {
@@ -61,6 +66,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpDelete]
+        [Authorize(Roles = "Admin")]
         [Route("{id}")]
         public async Task<IActionResult> DeleteCurvePoint(int id)
         {

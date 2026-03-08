@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using FindexiumAPI.Models;
+﻿using FindexiumAPI.Models;
 using FindexiumAPI.Repositories;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FindexiumAPI.Controllers
 {
@@ -16,6 +17,7 @@ namespace FindexiumAPI.Controllers
 
         // GET: api/User
         [HttpGet]
+        [Authorize(Policy = "Users")]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
         {
             var users = await _repository.GetAllUsersAsync();
@@ -24,6 +26,7 @@ namespace FindexiumAPI.Controllers
 
         // GET: api/User/5
         [HttpGet("{id}")]
+        [Authorize(Policy = "Users")]
         public async Task<ActionResult<UserDto>> GetUser(string id)
         {
             var user = await _repository.GetUserByIdAsync(id);
@@ -35,6 +38,7 @@ namespace FindexiumAPI.Controllers
 
         // POST: api/User
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<UserDto>> PostUser(CreateUserDto request)
         {
             if (!ModelState.IsValid)
@@ -46,6 +50,7 @@ namespace FindexiumAPI.Controllers
 
         // PUT: api/User/5
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PutUser(string id, UpdateUserDto request)
         {
             if (id != request.Id)
@@ -63,6 +68,7 @@ namespace FindexiumAPI.Controllers
 
         // DELETE: api/User/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUser(string id)
         {
             var deleted = await _repository.DeleteUserAsync(id);
