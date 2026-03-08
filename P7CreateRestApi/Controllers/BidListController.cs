@@ -22,6 +22,9 @@ namespace FindexiumAPI.Controllers
         public async Task<ActionResult<IEnumerable<BidListDto>>> GetBidLists()
         {
             var bidLists = await _repository.GetAllAsync();
+            if(!bidLists.Any())
+                return NotFound("No BidList found.");
+
             return Ok(bidLists);
         }
 
@@ -53,7 +56,7 @@ namespace FindexiumAPI.Controllers
             if (!updated)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The BidList mentioned has been updated.");
         }
 
         // POST: api/BidList
@@ -78,7 +81,7 @@ namespace FindexiumAPI.Controllers
             if (!deleted)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The BidList mentioned has been deleted.");
         }
     }
 }
