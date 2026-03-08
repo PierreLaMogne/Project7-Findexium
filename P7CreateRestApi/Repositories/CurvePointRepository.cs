@@ -59,15 +59,14 @@ namespace FindexiumAPI.Repositories
 
         public async Task<bool> UpdateAsync(int id, CurvePointDto dto)
         {
-            var curvePoint = await _context.CurvePoints.FindAsync(id);
-            if (curvePoint == null)
+            var existingCurvePoint = await _context.CurvePoints.FindAsync(id);
+            if (existingCurvePoint == null)
                 return false;
 
-            curvePoint.CurvePointValue = dto.CurvePointValue;
-            curvePoint.Term = dto.Term;
-            curvePoint.CurvePointValue = dto.CurvePointValue;
+            existingCurvePoint.CurvePointValue = dto.CurvePointValue;
+            existingCurvePoint.Term = dto.Term;
+            existingCurvePoint.CurvePointValue = dto.CurvePointValue;
 
-            _context.CurvePoints.Update(curvePoint);
             await _context.SaveChangesAsync();
 
             return true;

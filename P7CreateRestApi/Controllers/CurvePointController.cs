@@ -21,6 +21,9 @@ namespace FindexiumAPI.Controllers
         public async Task<ActionResult<IEnumerable<CurvePointDto>>> GetCurvePoints()
         {
             var curvePoints = await _repository.GetAllAsync();
+            if (!curvePoints.Any())
+                return NotFound("No CurvePoint found.");
+
             return Ok(curvePoints);
         }
 
@@ -62,7 +65,7 @@ namespace FindexiumAPI.Controllers
             if (!updated)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The CurvePoint mentioned has been updated.");
         }
 
         [HttpDelete]
@@ -74,7 +77,7 @@ namespace FindexiumAPI.Controllers
             if (!deleted)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The CurvePoint mentioned has been deleted.");
         }
     }
 }
