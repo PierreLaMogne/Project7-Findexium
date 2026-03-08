@@ -43,6 +43,20 @@ namespace FindexiumAPI.Repositories
             };
         }
 
+        public async Task<UserDto?> GetUserByUserNameAsync(string userName)
+        {
+            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.UserName == userName);
+            if (user == null)
+                return null;
+            return new UserDto
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                FullName = user.FullName,
+                Role = user.Role
+            };
+        }
+
         public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
         {
             if (dto.Password != dto.ConfirmPassword)
