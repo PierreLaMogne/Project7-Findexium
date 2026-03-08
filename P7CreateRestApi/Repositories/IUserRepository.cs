@@ -7,6 +7,7 @@ namespace FindexiumAPI.Repositories
     {
         Task<List<UserDto>> GetAllUsersAsync();
         Task<UserDto?> GetUserByIdAsync(string id);
+        Task<UserDto?> GetUserByUserNameAsync(string userName);
         Task<UserDto> CreateUserAsync(CreateUserDto dto);
         Task<UserDto> UpdateUserAsync(string id, UpdateUserDto dto);
         Task<bool> DeleteUserAsync(string id);

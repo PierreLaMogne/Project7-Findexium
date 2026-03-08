@@ -1,4 +1,4 @@
-﻿namespace FindexiumAPI.Repositories
+﻿namespace FindexiumAPI.Models
 {
     public class ChangePasswordDto
     {

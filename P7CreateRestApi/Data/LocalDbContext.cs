@@ -1,10 +1,11 @@
 using FindexiumAPI.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace FindexiumAPI.Data
 {
-    public class LocalDbContext : IdentityDbContext<User>
+    public class LocalDbContext : IdentityDbContext<User, IdentityRole, string>
     {
         public LocalDbContext(DbContextOptions<LocalDbContext> options) : base(options) { }
 
