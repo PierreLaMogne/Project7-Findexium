@@ -20,6 +20,9 @@ namespace FindexiumAPI.Controllers
         public async Task<ActionResult<IEnumerable<TradeDto>>> GetTrades()
         {
             var trades = await _repository.GetAllAsync();
+            if (!trades.Any())
+                return NotFound("No Trade found.");
+
             return Ok(trades);
         }
 
@@ -55,11 +58,11 @@ namespace FindexiumAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest("Informations mentionned are not valid.");
 
-            var updated = await _repository.UpdateAsync(id, trade);
-            if (!updated)
+            var updatedTrade = await _repository.UpdateAsync(id, trade);
+            if (!updatedTrade)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The Trade mentioned has been updated.");
         }
 
         [HttpDelete("{id}")]
@@ -70,7 +73,7 @@ namespace FindexiumAPI.Controllers
             if (!deleted)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The Trade mentioned has been deleted.");
         }
     }
 }
