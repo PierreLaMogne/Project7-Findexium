@@ -29,6 +29,16 @@ builder.Services.AddIdentity<User, IdentityRole>()
                 .AddEntityFrameworkStores<LocalDbContext>()
                 .AddDefaultTokenProviders();
 
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequiredLength = 8;
+    options.Password.RequiredUniqueChars = 1;
+});
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -89,7 +99,7 @@ static async Task SeedRolesAsync(WebApplication app)
     using var scope = app.Services.CreateScope();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-    string[] roles = new[] { "Admin", "Moderator", "User", "Visitor" };
+    string[] roles = new[] { "Admin", "User" };
     foreach (var role in roles)
     {
         if (!await roleManager.RoleExistsAsync(role))
