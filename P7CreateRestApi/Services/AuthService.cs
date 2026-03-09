@@ -27,11 +27,11 @@ namespace FindexiumAPI.Services
         {
             var user = await _userManager.FindByNameAsync(dto.UserName);
             if (user == null)
-                return Result<string>.Fail("Invalid username or password.");
+                return Result<string>.Fail("Invalid username or password.", "BadRequest");
 
             var isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
             if (!isPasswordValid)
-                return Result<string>.Fail("Invalid username or password.");
+                return Result<string>.Fail("Invalid username or password.", "BadRequest");
 
             var claims = new List<Claim>
             {
@@ -44,20 +44,20 @@ namespace FindexiumAPI.Services
             return Result<string>.Ok(token);
         }
 
-        public async Task<Result<string>> Register(CreateUserDto dto)
+        public async Task<Result<string>> Register(RegisterDto dto)
         {
             var existingUser = await _userManager.FindByNameAsync(dto.UserName);
             if (existingUser != null)
-                return Result<string>.Fail("Username already exists.");
+                return Result<string>.Fail("Username already exists.", "Conflict");
 
             if (dto.Password != dto.ConfirmPassword)
-                return Result<string>.Fail("Passwords do not match.");
+                return Result<string>.Fail("Passwords do not match.", "BadRequest");
 
             var user = new User
             {
                 UserName = dto.UserName,
                 FullName = dto.FullName,
-                Role = dto.Role
+                Role = "User"
             };
 
             await _userManager.CreateAsync(user);
@@ -67,7 +67,7 @@ namespace FindexiumAPI.Services
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.UserName),
-                new Claim(ClaimTypes.Role, "User")
+                new Claim(ClaimTypes.Role, user.Role)
             };
 
             var token = GenerateJwtToken(claims);
@@ -78,18 +78,18 @@ namespace FindexiumAPI.Services
         {
             var user = await _userManager.FindByIdAsync(dto.Id);
             if (user == null)
-                return Result<string>.Fail("User not found.");
+                return Result<string>.Fail("User not found.", "NotFound");
 
             var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, dto.CurrentPassword);
             if (!isCurrentPasswordValid)
-                return Result<string>.Fail("Current password is incorrect.");
+                return Result<string>.Fail("Current password is incorrect.", "BadRequest");
 
             if (dto.NewPassword != dto.ConfirmPassword)
-                return Result<string>.Fail("New passwords do not match.");
+                return Result<string>.Fail("New passwords do not match.", "BadRequest");
 
             var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
             if (!result.Succeeded)
-                return Result<string>.Fail("Failed to change password.");
+                return Result<string>.Fail("Failed to change password.", "BadRequest");
 
             var claims = new List<Claim>
             {
