@@ -50,7 +50,12 @@ namespace FindexiumAPI.Controllers
 
             var result = await _repository.CreateUserAsync(request);
             if (!result.IsSuccess)
+            {
+                if (result.Code == "Conflict")
+                    return Conflict(result.ErrorMessage);
+                else
                     return BadRequest(result.ErrorMessage);
+            }
 
             return Ok(result.Data);
         }

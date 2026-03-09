@@ -63,6 +63,9 @@ namespace FindexiumAPI.Repositories
             if (dto.Password != dto.ConfirmPassword)
                 return Result<UserDto>.Fail("Passwords do not match.", "BadRequest");
 
+            if (await _userManager.Users.AnyAsync(u => u.UserName == dto.UserName))
+                return Result<UserDto>.Fail("The UserName mentioned already exists.", "Conflict");
+
             var user = new User
             {
                 UserName = dto.UserName,

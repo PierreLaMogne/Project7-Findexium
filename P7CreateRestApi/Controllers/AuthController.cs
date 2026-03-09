@@ -25,7 +25,7 @@ namespace FindexiumAPI.Controllers
             var result = await _authService.Register(dto);
             if (!result.IsSuccess)
             {
-                if (result.Code == "UserExists")
+                if (result.Code == "Conflict")
                     return Conflict(result.ErrorMessage);
                 else
                     return BadRequest(result.ErrorMessage);
