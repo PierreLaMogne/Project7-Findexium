@@ -44,20 +44,6 @@ namespace FindexiumAPI.Repositories
             };
         }
 
-        public async Task<UserDto?> GetUserByUserNameAsync(string userName)
-        {
-            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.UserName == userName);
-            if (user == null)
-                return null;
-            return new UserDto
-            {
-                Id = user.Id,
-                UserName = user.UserName,
-                FullName = user.FullName,
-                Role = user.Role
-            };
-        }
-
         public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto dto)
         {
             if (dto.Password != dto.ConfirmPassword)
@@ -79,21 +65,24 @@ namespace FindexiumAPI.Repositories
             var roleExists = await _roleManager.RoleExistsAsync(dto.Role);
             if (!roleExists)
             {
-                var roleResult = await _roleManager.CreateAsync(new IdentityRole(dto.Role));
-                if (!roleResult.Succeeded)
-                    return Result<UserDto>.Fail($"Unable to create the new Role: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}", "BadRequest");
+                var addToRoleResult = await _userManager.AddToRoleAsync(user, "User");
+                if (!addToRoleResult.Succeeded)
+                    return Result<UserDto>.Fail($"Unable to add the \"User\" Role to the new User: {string.Join(", ", addToRoleResult.Errors.Select(e => e.Description))}", "BadRequest");
             }
-            
-            var addToRoleResult = await _userManager.AddToRoleAsync(user, dto.Role);
-            if (!addToRoleResult.Succeeded)
-                return Result<UserDto>.Fail($"Unable to add the mentionned Role to the new User: {string.Join(", ", addToRoleResult.Errors.Select(e => e.Description))}", "BadRequest");
+            else
+            {
+                var addToRoleResult = await _userManager.AddToRoleAsync(user, dto.Role);
+                if (!addToRoleResult.Succeeded)
+                    return Result<UserDto>.Fail($"Unable to add the mentionned Role to the new User: {string.Join(", ", addToRoleResult.Errors.Select(e => e.Description))}", "BadRequest");
+            }
+
 
             var newUser = new UserDto
             {
                 Id = user.Id,
                 UserName = user.UserName,
                 FullName = user.FullName,
-                Role = dto.Role
+                Role = user.Role
             };
 
             return Result<UserDto>.Ok(newUser!);
@@ -123,11 +112,7 @@ namespace FindexiumAPI.Repositories
             {
                 var roleExists = await _roleManager.RoleExistsAsync(dto.Role);
                 if (!roleExists)
-                {
-                    var roleResult = await _roleManager.CreateAsync(new IdentityRole(dto.Role));
-                    if (!roleResult.Succeeded)
-                        return Result<UserDto>.Fail($"Unable to create the Role mentionned: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}", "BadRequest");
-                }
+                    dto.Role = "User";
 
                 var removeFromRolesResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
                 if (!removeFromRolesResult.Succeeded)

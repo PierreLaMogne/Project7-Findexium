@@ -1008,3 +1008,5 @@ WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
 2026-03-10 23:12:09.464 +01:00 [INF] HTTP POST /api/Auth/login responded 200 in 312.4642 ms
 2026-03-10 23:12:09.468 +01:00 [DBG] 'LocalDbContext' disposed.
 2026-03-10 23:12:09.471 +01:00 [INF] Request finished HTTP/2 POST https://localhost:7210/api/Auth/login application/json 55 - 200 - text/plain;+charset=utf-8 336.1077ms
+2026-03-10 23:39:46.704 +01:00 [INF] HTTP POST /api/Auth/login responded 200 in 272.3852 ms
+2026-03-10 23:40:29.349 +01:00 [INF] HTTP POST /api/Rating responded 400 in 85.2628 ms
