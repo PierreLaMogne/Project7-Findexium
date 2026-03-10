@@ -110,30 +110,30 @@ namespace FindexiumAPI.Repositories
         }
         public async Task<bool> UpdateAsync(int id, TradeDto dto)
         {
-            var trade = await _context.Trades.FindAsync(id);
-            if (trade == null)
+            var existingTrade = await _context.Trades.FindAsync(id);
+            if (existingTrade == null)
                 return false;
 
-            trade.Account = dto.Account;
-            trade.AccountType = dto.AccountType;
-            trade.BuyQuantity = dto.BuyQuantity;
-            trade.SellQuantity = dto.SellQuantity;
-            trade.BuyPrice = dto.BuyPrice;
-            trade.SellPrice = dto.SellPrice;
-            trade.TradeDate = dto.TradeDate;
-            trade.TradeSecurity = dto.TradeSecurity;
-            trade.TradeStatus = dto.TradeStatus;
-            trade.Trader = dto.Trader;
-            trade.Benchmark = dto.Benchmark;
-            trade.Book = dto.Book;
-            trade.CreationName = dto.CreationName;
-            trade.CreationDate = dto.CreationDate;
-            trade.RevisionName = dto.RevisionName;
-            trade.RevisionDate = dto.RevisionDate;
-            trade.DealName = dto.DealName;
-            trade.DealType = dto.DealType;
-            trade.SourceListId = dto.SourceListId;
-            trade.Side = dto.Side;
+            existingTrade.Account = dto.Account;
+            existingTrade.AccountType = dto.AccountType;
+            existingTrade.BuyQuantity = dto.BuyQuantity;
+            existingTrade.SellQuantity = dto.SellQuantity;
+            existingTrade.BuyPrice = dto.BuyPrice;
+            existingTrade.SellPrice = dto.SellPrice;
+            existingTrade.TradeDate = dto.TradeDate;
+            existingTrade.TradeSecurity = dto.TradeSecurity;
+            existingTrade.TradeStatus = dto.TradeStatus;
+            existingTrade.Trader = dto.Trader;
+            existingTrade.Benchmark = dto.Benchmark;
+            existingTrade.Book = dto.Book;
+            existingTrade.CreationName = dto.CreationName;
+            existingTrade.CreationDate = dto.CreationDate;
+            existingTrade.RevisionName = dto.RevisionName;
+            existingTrade.RevisionDate = dto.RevisionDate;
+            existingTrade.DealName = dto.DealName;
+            existingTrade.DealType = dto.DealType;
+            existingTrade.SourceListId = dto.SourceListId;
+            existingTrade.Side = dto.Side;
 
             await _context.SaveChangesAsync();
             return true;

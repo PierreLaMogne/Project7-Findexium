@@ -63,14 +63,14 @@ namespace FindexiumAPI.Repositories
 
         public async Task<bool> UpdateAsync(int id, RatingDto dto)
         {
-            var rating = await _context.Ratings.FindAsync(id);
-            if (rating == null)
+            var existingRating = await _context.Ratings.FindAsync(id);
+            if (existingRating == null)
                 return false;
 
-            rating.MoodysRating = dto.MoodysRating;
-            rating.SandPRating = dto.SandPRating;
-            rating.FitchRating = dto.FitchRating;
-            rating.OrderNumber = dto.OrderNumber;
+            existingRating.MoodysRating = dto.MoodysRating;
+            existingRating.SandPRating = dto.SandPRating;
+            existingRating.FitchRating = dto.FitchRating;
+            existingRating.OrderNumber = dto.OrderNumber;
 
             await _context.SaveChangesAsync();
             return true;

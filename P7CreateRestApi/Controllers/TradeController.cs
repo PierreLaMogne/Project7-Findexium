@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using FindexiumAPI.Models;
+﻿using FindexiumAPI.Models;
 using FindexiumAPI.Repositories;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FindexiumAPI.Controllers
 {
@@ -15,13 +16,18 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "Users")]
         public async Task<ActionResult<IEnumerable<TradeDto>>> GetTrades()
         {
             var trades = await _repository.GetAllAsync();
+            if (!trades.Any())
+                return NotFound("No Trade found.");
+
             return Ok(trades);
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = "Users")]
         public async Task<ActionResult<TradeDto>> GetTrade(int id)
         {
             var trade = await _repository.GetByIdAsync(id);
@@ -32,6 +38,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<TradeDto>> PostTrade(TradeDto trade)
         {
             if (!ModelState.IsValid)
@@ -42,6 +49,7 @@ namespace FindexiumAPI.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PutTrade(int id, TradeDto trade)
         {
             if (id != trade.TradeId)
@@ -50,21 +58,22 @@ namespace FindexiumAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest("Informations mentionned are not valid.");
 
-            var updated = await _repository.UpdateAsync(id, trade);
-            if (!updated)
+            var updatedTrade = await _repository.UpdateAsync(id, trade);
+            if (!updatedTrade)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The Trade mentioned has been updated.");
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteTrade(int id)
         {
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The Trade mentioned has been deleted.");
         }
     }
 }

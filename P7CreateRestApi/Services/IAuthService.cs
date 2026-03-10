@@ -5,7 +5,7 @@ namespace FindexiumAPI.Services
 {
     public interface IAuthService
     {
-        Task<Result<string>> Register(CreateUserDto dto);
+        Task<Result<string>> Register(RegisterDto dto);
         Task<Result<string>> Authenticate(LoginDto dto);
         Task<Result<string>> ChangePassword(ChangePasswordDto dto);
     }

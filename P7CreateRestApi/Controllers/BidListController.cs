@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using FindexiumAPI.Models;
 using FindexiumAPI.Repositories;
+using Microsoft.AspNetCore.Authorization;
 
 namespace FindexiumAPI.Controllers
 {
@@ -17,14 +18,19 @@ namespace FindexiumAPI.Controllers
 
         // GET: api/BidList
         [HttpGet]
+        [Authorize(Policy = "Users")]
         public async Task<ActionResult<IEnumerable<BidListDto>>> GetBidLists()
         {
             var bidLists = await _repository.GetAllAsync();
+            if(!bidLists.Any())
+                return NotFound("No BidList found.");
+
             return Ok(bidLists);
         }
 
         // GET: api/BidList/5
         [HttpGet("{id}")]
+        [Authorize(Policy = "Users")]
         public async Task<ActionResult<BidListDto>> GetBidList(int id)
         {
             var bidList = await _repository.GetByIdAsync(id);
@@ -37,6 +43,7 @@ namespace FindexiumAPI.Controllers
         // PUT: api/BidList/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PutBidList(int id, BidListDto bidList)
         {
             if (id != bidList.BidListId)
@@ -49,12 +56,13 @@ namespace FindexiumAPI.Controllers
             if (!updated)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The BidList mentioned has been updated.");
         }
 
         // POST: api/BidList
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<BidListDto>> PostBidList(BidListDto bidList)
         {
             if (!ModelState.IsValid)
@@ -66,13 +74,14 @@ namespace FindexiumAPI.Controllers
 
         // DELETE: api/BidList/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteBidList(int id)
         {
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
                 return NotFound("The Id mentioned does not exist.");
 
-            return NoContent();
+            return Ok("The BidList mentioned has been deleted.");
         }
     }
 }

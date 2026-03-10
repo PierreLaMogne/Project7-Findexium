@@ -15,7 +15,7 @@ namespace FindexiumAPI.Repositories
 
         public async Task<IEnumerable<BidListDto>> GetAllAsync()
         {
-            return await _context.BidLists
+           return await _context.BidLists
                 .Select(b => new BidListDto
                 {
                     BidListId = b.BidListId,

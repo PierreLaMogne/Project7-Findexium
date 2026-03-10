@@ -20,11 +20,16 @@ namespace FindexiumAPI.Controllers
 
         [HttpPost]
         [Route("register")]
-        public async Task<IActionResult> Register(CreateUserDto dto)
+        public async Task<IActionResult> Register(RegisterDto dto)
         {
             var result = await _authService.Register(dto);
-            if (!result.Success)
-                return BadRequest(result.ErrorMessage);
+            if (!result.IsSuccess)
+            {
+                if (result.Code == "Conflict")
+                    return Conflict(result.ErrorMessage);
+                else
+                    return BadRequest(result.ErrorMessage);
+            }
             return Ok(result.Data);
         }
 
@@ -33,23 +38,28 @@ namespace FindexiumAPI.Controllers
         public async Task<IActionResult> Login(LoginDto dto)
         {
             var result = await _authService.Authenticate(dto);
-            if (!result.Success)
+            if (!result.IsSuccess)
                 return BadRequest(result.ErrorMessage);
             return Ok(result.Data);
         }
 
         [HttpPost]
-        [Authorize(Roles = "User, Admin")]
+        [Authorize(Policy = "Users")]
         [Route("password")]
         public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId != dto.Id)
-                return Unauthorized("You can only change your own password.");
+                    return Unauthorized("You can only change your own password.");
 
             var result = await _authService.ChangePassword(dto);
-            if (!result.Success)
-                return BadRequest(result.ErrorMessage);
+            if (!result.IsSuccess)
+            {
+                if (result.Code == "NotFound")
+                    return NotFound(result.ErrorMessage);
+                else
+                    return BadRequest(result.ErrorMessage);
+            }
 
             return Ok(result.Data);
         }

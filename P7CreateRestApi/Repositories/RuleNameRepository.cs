@@ -70,16 +70,16 @@ namespace FindexiumAPI.Repositories
 
         public async Task<bool> UpdateAsync(int id, RuleNameDto dto)
         {
-            var ruleName = await _context.RuleNames.FindAsync(id);
-            if (ruleName == null)
+            var existingRuleName = await _context.RuleNames.FindAsync(id);
+            if (existingRuleName == null)
                 return false;
 
-            ruleName.Name = dto.Name;
-            ruleName.Description = dto.Description;
-            ruleName.Json = dto.Json;
-            ruleName.Template = dto.Template;
-            ruleName.SqlStr = dto.SqlStr;
-            ruleName.SqlPart = dto.SqlPart;
+            existingRuleName.Name = dto.Name;
+            existingRuleName.Description = dto.Description;
+            existingRuleName.Json = dto.Json;
+            existingRuleName.Template = dto.Template;
+            existingRuleName.SqlStr = dto.SqlStr;
+            existingRuleName.SqlPart = dto.SqlPart;
 
             await _context.SaveChangesAsync();
             return true;
