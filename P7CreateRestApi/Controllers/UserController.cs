@@ -46,7 +46,7 @@ namespace FindexiumAPI.Controllers
         public async Task<ActionResult<UserDto>> PostUser(CreateUserDto request)
         {
             if (!ModelState.IsValid)
-                return BadRequest("Informations mentionned are not valid.");
+                return BadRequest(ModelState);
 
             var result = await _repository.CreateUserAsync(request);
             if (!result.IsSuccess)
@@ -69,7 +69,7 @@ namespace FindexiumAPI.Controllers
                 return BadRequest("The Id focused and the Id mentioned are different.");
 
             if (!ModelState.IsValid)
-                return BadRequest("Informations mentionned are not valid.");
+                return BadRequest(ModelState);
 
             var result = await _repository.UpdateUserAsync(id, request);
             if (!result.IsSuccess)

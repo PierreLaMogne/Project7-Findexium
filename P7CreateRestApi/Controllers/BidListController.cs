@@ -40,6 +40,19 @@ namespace FindexiumAPI.Controllers
             return Ok(bidList);
         }
 
+        // POST: api/BidList
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<BidListDto>> PostBidList(BidListDto bidList)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var createdBidList = await _repository.AddAsync(bidList);
+            return CreatedAtAction(nameof(GetBidList), new { id = createdBidList.BidListId }, createdBidList);
+        }
+
         // PUT: api/BidList/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
@@ -50,26 +63,13 @@ namespace FindexiumAPI.Controllers
                 return BadRequest("The Id focused and the Id mentioned are different.");
 
             if (!ModelState.IsValid)
-                return BadRequest("Informations mentionned are not valid.");
+                return BadRequest(ModelState);
 
             var updated = await _repository.UpdateAsync(id, bidList);
             if (!updated)
                 return NotFound("The Id mentioned does not exist.");
 
             return Ok("The BidList mentioned has been updated.");
-        }
-
-        // POST: api/BidList
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<BidListDto>> PostBidList(BidListDto bidList)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest("Informations mentionned are not valid.");
-
-            var createdBidList = await _repository.AddAsync(bidList);
-            return CreatedAtAction(nameof(GetBidList), new { id = createdBidList.BidListId }, createdBidList);
         }
 
         // DELETE: api/BidList/5
