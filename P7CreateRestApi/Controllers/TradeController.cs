@@ -42,7 +42,7 @@ namespace FindexiumAPI.Controllers
         public async Task<ActionResult<TradeDto>> PostTrade(TradeDto trade)
         {
             if (!ModelState.IsValid)
-                return BadRequest("Informations mentionned are not valid.");
+                return BadRequest(ModelState);
 
             var createdTrade = await _repository.AddAsync(trade);
             return CreatedAtAction(nameof(GetTrade), new { id = createdTrade.TradeId }, createdTrade);
@@ -56,7 +56,7 @@ namespace FindexiumAPI.Controllers
                 return BadRequest("The Id focused and the Id mentioned are different.");
 
             if (!ModelState.IsValid)
-                return BadRequest("Informations mentionned are not valid.");
+                return BadRequest(ModelState);
 
             var updatedTrade = await _repository.UpdateAsync(id, trade);
             if (!updatedTrade)

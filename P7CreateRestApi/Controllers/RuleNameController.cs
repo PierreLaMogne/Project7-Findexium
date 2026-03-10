@@ -43,7 +43,7 @@ namespace FindexiumAPI.Controllers
         public async Task<ActionResult<RuleNameDto>> PostRuleName(RuleNameDto ruleName)
         {
             if (!ModelState.IsValid)
-                return BadRequest("Informations mentionned are not valid.");
+                return BadRequest(ModelState);
 
             var createdRuleName = await _repository.AddAsync(ruleName);
             return CreatedAtAction(nameof(GetRuleName), new { id = createdRuleName.Id }, createdRuleName);
@@ -57,7 +57,7 @@ namespace FindexiumAPI.Controllers
                 return BadRequest("The Id focused and the Id mentioned are different.");
 
             if (!ModelState.IsValid)
-                return BadRequest("Informations mentionned are not valid.");
+                return BadRequest(ModelState);
 
             var updated = await _repository.UpdateAsync(id, ruleName);
             if (!updated)

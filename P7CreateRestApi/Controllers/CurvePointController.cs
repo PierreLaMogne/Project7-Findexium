@@ -44,7 +44,7 @@ namespace FindexiumAPI.Controllers
         public async Task<ActionResult<CurvePointDto>> PostCurvePoint(CurvePointDto curvePoint)
         {
             if (!ModelState.IsValid)
-                return BadRequest("Informations mentionned are not valid.");
+                return BadRequest(ModelState);
 
             var createdCurvePoint = await _repository.AddAsync(curvePoint);
             return CreatedAtAction(nameof(GetCurvePoint), new { id = createdCurvePoint.Id }, createdCurvePoint);
@@ -59,7 +59,7 @@ namespace FindexiumAPI.Controllers
                 return BadRequest("The Id focused and the Id mentioned are different.");
 
             if (!ModelState.IsValid)
-                return BadRequest("Informations mentionned are not valid.");
+                return BadRequest(ModelState);
 
             var updated = await _repository.UpdateAsync(id, curvePoint);
             if (!updated)

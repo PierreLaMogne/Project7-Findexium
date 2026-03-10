@@ -44,7 +44,7 @@ namespace FindexiumAPI.Controllers
         public async Task<ActionResult<RatingDto>> PostRating(RatingDto rating)
         {
             if (!ModelState.IsValid)
-                return BadRequest("Informations mentionned are not valid.");
+                return BadRequest(ModelState);
 
             var createdRating = await _repository.AddAsync(rating);
             return CreatedAtAction(nameof(GetRating), new { id = createdRating.Id }, createdRating);
@@ -59,7 +59,7 @@ namespace FindexiumAPI.Controllers
                 return BadRequest("The Id focused and the Id mentioned are different.");
 
             if (!ModelState.IsValid)
-                return BadRequest("Informations mentionned are not valid.");
+                return BadRequest(ModelState);
 
             var updated = await _repository.UpdateAsync(id, rating);
             if (!updated)
