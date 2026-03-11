@@ -10,12 +10,16 @@ namespace FindexiumAPI.Models
         [Required]
         public string AccountType { get; set; } = string.Empty;
         [Required]
+        [RegularExpression(@"^\d+$", ErrorMessage = "Only digits are allowed.")]
         public double? BuyQuantity { get; set; }
         [Required]
+        [RegularExpression(@"^\d+$", ErrorMessage = "Only digits are allowed.")]
         public double? SellQuantity { get; set; }
         [Required]
+        [RegularExpression(@"^\d+$", ErrorMessage = "Only digits are allowed.")]
         public double? BuyPrice { get; set; }
         [Required]
+        [RegularExpression(@"^\d+$", ErrorMessage = "Only digits are allowed.")]
         public double? SellPrice { get; set; }
         [Required]
         public DateTime? TradeDate { get; set; }
