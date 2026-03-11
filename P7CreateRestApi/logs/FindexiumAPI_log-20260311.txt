@@ -1,0 +1,119 @@
+2026-03-11 10:10:17.622 +01:00 [INF] HTTP POST /api/Auth/login responded 200 in 297.6647 ms
+2026-03-11 10:11:00.645 +01:00 [INF] HTTP POST /api/BidList responded 201 in 294.8625 ms
+2026-03-11 10:16:20.596 +01:00 [INF] HTTP GET /api/User responded 200 in 76.8907 ms
+2026-03-11 10:17:28.261 +01:00 [INF] HTTP POST /api/Auth/register responded 200 in 71.8992 ms
+2026-03-11 10:18:12.270 +01:00 [INF] HTTP GET /api/User responded 200 in 14.6217 ms
+2026-03-11 10:18:49.681 +01:00 [INF] HTTP PUT /api/User/dffb4c14-d10d-47c8-810d-34991cd37479 responded 400 in 19.7031 ms
+2026-03-11 10:19:00.702 +01:00 [INF] HTTP PUT /api/User/dffb4c14-d10d-47c8-810d-34991cd37479 responded 200 in 142.2078 ms
+2026-03-11 10:19:14.526 +01:00 [INF] HTTP GET /api/User responded 200 in 2.5663 ms
+2026-03-11 10:19:33.430 +01:00 [INF] HTTP DELETE /api/User/dffb4c14-d10d-47c8-810d-34991cd37479 responded 200 in 27.8451 ms
+2026-03-11 10:19:43.700 +01:00 [INF] HTTP GET /api/User responded 200 in 2.4289 ms
+2026-03-11 10:36:25.830 +01:00 [INF] HTTP POST /api/Auth/login responded 200 in 263.9431 ms
+2026-03-11 10:36:47.912 +01:00 [INF] HTTP GET /api/User responded 200 in 105.3515 ms
+2026-03-11 10:41:11.424 +01:00 [INF] HTTP POST /api/Auth/login responded 400 in 141.7382 ms
+2026-03-11 10:47:24.814 +01:00 [INF] HTTP GET /api/BidList responded 401 in 54.8116 ms
+2026-03-11 10:47:43.875 +01:00 [WRN] Invalid password for user.
+2026-03-11 10:47:43.887 +01:00 [INF] HTTP POST /api/Auth/login responded 400 in 126.8971 ms
+2026-03-11 10:47:55.434 +01:00 [INF] HTTP POST /api/Auth/login responded 200 in 120.9058 ms
+2026-03-11 10:48:11.033 +01:00 [INF] HTTP GET /api/BidList responded 200 in 97.0626 ms
+2026-03-11 10:48:14.110 +01:00 [INF] HTTP GET /api/BidList responded 200 in 4.8548 ms
+2026-03-11 10:48:14.820 +01:00 [INF] HTTP GET /api/BidList responded 200 in 4.1218 ms
+2026-03-11 10:48:15.240 +01:00 [INF] HTTP GET /api/BidList responded 200 in 2.8408 ms
+2026-03-11 10:48:15.701 +01:00 [INF] HTTP GET /api/BidList responded 200 in 2.8055 ms
+2026-03-11 10:48:15.882 +01:00 [INF] HTTP GET /api/BidList responded 200 in 2.7023 ms
+2026-03-11 10:48:16.071 +01:00 [INF] HTTP GET /api/BidList responded 200 in 2.3944 ms
+2026-03-11 10:48:16.237 +01:00 [INF] HTTP GET /api/BidList responded 200 in 3.0132 ms
+2026-03-11 10:48:16.408 +01:00 [INF] HTTP GET /api/BidList responded 200 in 2.5191 ms
+2026-03-11 10:48:16.579 +01:00 [INF] HTTP GET /api/BidList responded 200 in 2.8891 ms
+2026-03-11 10:48:16.747 +01:00 [INF] HTTP GET /api/BidList responded 200 in 2.8806 ms
+2026-03-11 10:48:16.920 +01:00 [INF] HTTP GET /api/BidList responded 200 in 2.6797 ms
+2026-03-11 10:48:17.116 +01:00 [INF] HTTP GET /api/BidList responded 200 in 2.8424 ms
+2026-03-11 10:58:53.731 +01:00 [INF] HTTP POST /api/Auth/login responded 200 in 265.7170 ms
+2026-03-11 10:59:05.158 +01:00 [INF] HTTP GET /api/BidList responded 401 in 12.7291 ms
+2026-03-11 10:59:20.908 +01:00 [INF] HTTP GET /api/BidList responded 200 in 95.1579 ms
+2026-03-11 10:59:22.342 +01:00 [INF] HTTP GET /api/BidList responded 200 in 4.7564 ms
+2026-03-11 10:59:23.310 +01:00 [INF] HTTP GET /api/BidList responded 200 in 4.0399 ms
+2026-03-11 10:59:23.734 +01:00 [INF] HTTP GET /api/BidList responded 200 in 2.8098 ms
+2026-03-11 11:04:39.149 +01:00 [INF] 🔍 DEBUG UserContext: {"IsAuthenticated":false,"ClaimsCount":0,"AllClaims":[],"NameId":null,"NameIdClaimTypes":null}
+2026-03-11 11:04:39.265 +01:00 [ERR] An unhandled exception has occurred while executing the request.
+System.InvalidOperationException: Unable to resolve service for type 'Microsoft.Extensions.Logging.ILogger' while attempting to activate 'FindexiumAPI.Controllers.AuthController'.
+   at Microsoft.Extensions.DependencyInjection.ActivatorUtilities.GetService(IServiceProvider sp, Type type, Type requiredBy, Boolean isDefaultParameterRequired)
+   at lambda_method59(Closure , IServiceProvider , Object[] )
+   at Microsoft.AspNetCore.Mvc.Controllers.ControllerActivatorProvider.<>c__DisplayClass7_0.<CreateActivator>b__0(ControllerContext controllerContext)
+   at Microsoft.AspNetCore.Mvc.Controllers.ControllerFactoryProvider.<>c__DisplayClass6_0.<CreateControllerFactory>g__CreateController|0(ControllerContext controllerContext)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|6_0(Endpoint endpoint, Task requestTask, ILogger logger)
+   at FindexiumAPI.logs.UserContextMiddleware.InvokeAsync(HttpContext context) in C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\P7CreateRestApi\logs\UserContextMiddleware.cs:line 34
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware.Invoke(HttpContext context)
+2026-03-11 11:07:12.387 +01:00 [INF] HTTP GET /api/Auth/debug-user responded 401 in 56.1887 ms
+2026-03-11 11:07:30.938 +01:00 [INF] 🔍 DEBUG UserContext: {"IsAuthenticated":false,"ClaimsCount":0,"AllClaims":[],"NameId":null,"NameIdClaimTypes":null}
+2026-03-11 11:07:31.160 +01:00 [INF] HTTP POST /api/Auth/login responded 200 in 225.4147 ms
+2026-03-11 11:07:42.525 +01:00 [INF] 🔍 DEBUG UserContext: {"IsAuthenticated":true,"ClaimsCount":8,"AllClaims":[{"Type":"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier","Value":"274e73af-1ebb-4c71-8196-1303f2848e7b"},{"Type":"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name","Value":"Pierre"},{"Type":"http://schemas.microsoft.com/ws/2008/06/identity/claims/role","Value":"Admin"},{"Type":"nbf","Value":"1773223651"},{"Type":"exp","Value":"1773227251"},{"Type":"iat","Value":"1773223651"},{"Type":"iss","Value":"Findexium.Api"},{"Type":"aud","Value":"Findexium.Users"}],"NameId":null,"NameIdClaimTypes":"274e73af-1ebb-4c71-8196-1303f2848e7b"}
+2026-03-11 11:07:42.542 +01:00 [INF] 🧪 Test utilisateur - Claims: [{"Type":"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier","Value":"274e73af-1ebb-4c71-8196-1303f2848e7b"},{"Type":"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name","Value":"Pierre"},{"Type":"http://schemas.microsoft.com/ws/2008/06/identity/claims/role","Value":"Admin"},{"Type":"nbf","Value":"1773223651"},{"Type":"exp","Value":"1773227251"},{"Type":"iat","Value":"1773223651"},{"Type":"iss","Value":"Findexium.Api"},{"Type":"aud","Value":"Findexium.Users"}]
+2026-03-11 11:07:42.555 +01:00 [INF] HTTP GET /api/Auth/debug-user responded 200 in 88.3876 ms
+[2026-03-11 11:13:55 INF] 👤  | HTTP POST /api/Auth/login responded 200 in 284.2369 ms
+[2026-03-11 11:14:00 INF] 👤  | HTTP POST /api/Auth/login responded 200 in 6.0530 ms
+[2026-03-11 11:14:11 INF] 👤  | HTTP GET /api/User responded 200 in 81.6579 ms
+[2026-03-11 11:14:14 INF] 👤  | HTTP GET /api/User responded 200 in 3.4330 ms
+[2026-03-11 11:14:15 INF] 👤  | HTTP GET /api/User responded 200 in 9.6930 ms
+[2026-03-11 11:14:16 INF] 👤  | HTTP GET /api/User responded 200 in 2.8931 ms
+[2026-03-11 11:14:16 INF] 👤  | HTTP GET /api/User responded 200 in 3.1331 ms
+[2026-03-11 11:14:16 INF] 👤  | HTTP GET /api/User responded 200 in 2.7433 ms
+[2026-03-11 11:15:42 INF] 👤  | HTTP POST /api/Auth/login responded 200 in 249.3083 ms
+[2026-03-11 11:16:00 INF] 👤 274e73af-1ebb-4c71-8196-1303f2848e7b | 🧪 Test utilisateur - Claims: [{"Type":"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier","Value":"274e73af-1ebb-4c71-8196-1303f2848e7b"},{"Type":"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name","Value":"Pierre"},{"Type":"http://schemas.microsoft.com/ws/2008/06/identity/claims/role","Value":"Admin"},{"Type":"nbf","Value":"1773224142"},{"Type":"exp","Value":"1773227742"},{"Type":"iat","Value":"1773224142"},{"Type":"iss","Value":"Findexium.Api"},{"Type":"aud","Value":"Findexium.Users"}]
+[2026-03-11 11:16:00 INF] 👤  | HTTP GET /api/Auth/debug-user responded 200 in 89.4856 ms
+[2026-03-11 11:16:27 INF] 👤  | HTTP GET /api/User responded 200 in 27.9367 ms
+[2026-03-11 11:18:57 INF] 👤 Anonymous | 👤 Anonymous | HTTP POST /api/Auth/login responded 200 in 263.5134 ms
+[2026-03-11 11:18:59 INF] 👤 Anonymous | 👤 Anonymous | HTTP POST /api/Auth/login responded 200 in 5.7304 ms
+[2026-03-11 11:19:14 INF] 👤 274e73af-1ebb-4c71-8196-1303f2848e7b | 🧪 Test utilisateur - Claims: [{"Type":"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier","Value":"274e73af-1ebb-4c71-8196-1303f2848e7b"},{"Type":"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name","Value":"Pierre"},{"Type":"http://schemas.microsoft.com/ws/2008/06/identity/claims/role","Value":"Admin"},{"Type":"nbf","Value":"1773224339"},{"Type":"exp","Value":"1773227939"},{"Type":"iat","Value":"1773224339"},{"Type":"iss","Value":"Findexium.Api"},{"Type":"aud","Value":"Findexium.Users"}]
+[2026-03-11 11:19:14 INF] 👤 274e73af-1ebb-4c71-8196-1303f2848e7b | 👤 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/Auth/debug-user responded 200 in 95.5194 ms
+[2026-03-11 11:19:28 INF] 👤 274e73af-1ebb-4c71-8196-1303f2848e7b | 👤 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 36.0927 ms
+[2026-03-11 11:19:48 INF] 👤 274e73af-1ebb-4c71-8196-1303f2848e7b | 👤 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/User responded 200 in 11.3726 ms
+[2026-03-11 11:24:12 INF] UserId:  | UserId: {UserNameId} | HTTP POST /api/Auth/login responded 200 in 255.4905 ms
+[2026-03-11 11:24:31 INF] UserId:  | UserId: {UserNameId} | HTTP GET /api/User responded 200 in 81.2039 ms
+[2026-03-11 11:27:09 INF] UserId: Anonymous | UserId: Anonymous | HTTP POST /api/Auth/login responded 200 in 246.1911 ms
+[2026-03-11 11:27:22 INF] UserId: Anonymous | UserId: Anonymous | HTTP GET /api/Rating responded 404 in 91.3081 ms
+[2026-03-11 11:27:34 INF] UserId: Anonymous | UserId: Anonymous | HTTP GET /api/User responded 200 in 13.3401 ms
+[2026-03-11 11:29:30 INF] UserId: Anonymous | UserId: Anonymous | HTTP POST /api/Auth/login responded 200 in 208.7490 ms
+[2026-03-11 11:29:41 INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/Trade responded 404 in 29.8145 ms
+[2026-03-11 11:29:55 INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/Trade responded 404 in 4.1878 ms
+[2026-03-11 11:29:56 INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/Trade responded 404 in 3.9868 ms
+[2026-03-11 11:30:42 INF] UserId:  | UserId: {UserNameId} | HTTP POST /api/Auth/login responded 200 in 206.9927 ms
+[2026-03-11 11:30:52 INF] UserId:  | UserId: {UserNameId} | HTTP GET /api/BidList responded 200 in 32.7395 ms
+2026-03-11 11:31:54.843 +01:00 [INF] UserId: Anonymous | HTTP POST /api/Auth/login responded 200 in 208.9468 ms
+2026-03-11 11:32:08.408 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 31.7792 ms
+2026-03-11 11:33:01.898 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 3.9867 ms
+2026-03-11 11:33:03.094 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 3.7480 ms
+2026-03-11 11:33:04.039 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.2603 ms
+2026-03-11 11:33:05.802 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.5870 ms
+2026-03-11 11:33:06.027 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.3877 ms
+2026-03-11 11:33:07.118 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.2292 ms
+2026-03-11 11:33:07.360 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.5999 ms
+2026-03-11 11:33:11.094 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.9384 ms
+2026-03-11 11:33:57.802 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 9.3446 ms
+2026-03-11 11:33:59.361 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.9400 ms
+2026-03-11 11:33:59.653 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.6491 ms
+2026-03-11 11:33:59.842 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.0751 ms
+2026-03-11 11:34:00.008 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.6566 ms
+2026-03-11 11:34:00.201 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.4632 ms
+2026-03-11 11:34:00.357 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.4557 ms
+2026-03-11 11:34:00.546 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.4502 ms
+2026-03-11 11:34:00.702 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.0849 ms
+2026-03-11 11:34:00.900 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.0687 ms
+2026-03-11 11:34:01.195 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 1.9570 ms
+2026-03-11 11:34:01.552 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.0229 ms
+2026-03-11 11:34:01.711 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.2720 ms
+2026-03-11 11:34:19.330 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.6342 ms
+2026-03-11 11:34:19.928 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.5441 ms
+2026-03-11 11:34:20.335 +01:00 [INF] UserId: 274e73af-1ebb-4c71-8196-1303f2848e7b | HTTP GET /api/BidList responded 200 in 2.2221 ms
+2026-03-11 11:36:53.003 +01:00 [INF] HTTP POST /api/Auth/login responded 200 in 205.9911 ms
+2026-03-11 11:37:10.720 +01:00 [INF] HTTP GET /api/BidList responded 200 in 32.6384 ms

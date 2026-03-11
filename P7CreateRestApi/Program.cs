@@ -1,6 +1,7 @@
-using FindexiumAPI.Common;
+﻿using FindexiumAPI.Common;
 using FindexiumAPI.Data;
 using FindexiumAPI.Domain;
+using FindexiumAPI.logs;
 using FindexiumAPI.Repositories;
 using FindexiumAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,8 +10,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using Serilog.Context;
 using Serilog.Events;
 using Serilog.Formatting.Json;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -105,11 +108,11 @@ builder.Services.AddScoped<ITradeRepository, TradeRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .Enrich.FromLogContext()
-    .Enrich.WithRequestUserId()
     .WriteTo.Console()
     .WriteTo.File("logs/FindexiumAPI_log-.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
@@ -126,12 +129,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseSerilogRequestLogging();
-
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<UserContextMiddleware>();
+app.UseSerilogRequestLogging(options =>
+{
+    // Message template PERSONNALISÉ avec UserNameId
+    options.MessageTemplate = "UserId: {UserNameId} | HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+});
 
 app.MapControllers();
 
