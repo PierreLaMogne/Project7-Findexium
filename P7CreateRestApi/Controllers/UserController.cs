@@ -51,7 +51,7 @@ namespace FindexiumAPI.Controllers
             var result = await _repository.CreateUserAsync(request);
             if (!result.IsSuccess)
             {
-                if (result.Code == "Conflict")
+                if (result.Code == "409")
                     return Conflict(result.ErrorMessage);
                 else
                     return BadRequest(result.ErrorMessage);
@@ -74,9 +74,9 @@ namespace FindexiumAPI.Controllers
             var result = await _repository.UpdateUserAsync(id, request);
             if (!result.IsSuccess)
             {
-                if (result.Code == "NotFound")
+                if (result.Code == "404")
                     return NotFound(result.ErrorMessage);
-                else if (result.Code == "Conflict")
+                else if (result.Code == "409")
                     return Conflict(result.ErrorMessage);
                 else
                     return BadRequest(result.ErrorMessage);
@@ -92,7 +92,7 @@ namespace FindexiumAPI.Controllers
         {
             var result = await _repository.DeleteUserAsync(id);
             if (!result.IsSuccess)
-            { if (result.Code == "NotFound")
+            { if (result.Code == "404")
                     return NotFound(result.ErrorMessage);
                 else
                     return BadRequest(result.ErrorMessage);

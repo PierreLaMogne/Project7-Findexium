@@ -27,11 +27,11 @@ namespace FindexiumAPI.Services
         {
             var user = await _userManager.FindByNameAsync(dto.UserName);
             if (user == null)
-                return Result<string>.Fail("Invalid username or password.", "BadRequest");
+                return Result<string>.Fail("Invalid username or password.", "400");
 
             var isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
             if (!isPasswordValid)
-                return Result<string>.Fail("Invalid username or password.", "BadRequest");
+                return Result<string>.Fail("Invalid username or password.", "400");
 
             var claims = new List<Claim>
             {
@@ -48,10 +48,10 @@ namespace FindexiumAPI.Services
         {
             var existingUser = await _userManager.FindByNameAsync(dto.UserName);
             if (existingUser != null)
-                return Result<string>.Fail("Username already exists.", "Conflict");
+                return Result<string>.Fail("Username already exists.", "409");
 
             if (dto.Password != dto.ConfirmPassword)
-                return Result<string>.Fail("Passwords do not match.", "BadRequest");
+                return Result<string>.Fail("Passwords do not match.", "400");
 
             var user = new User
             {
@@ -78,18 +78,18 @@ namespace FindexiumAPI.Services
         {
             var user = await _userManager.FindByIdAsync(dto.Id);
             if (user == null)
-                return Result<string>.Fail("User not found.", "NotFound");
+                return Result<string>.Fail("User not found.", "404");
 
             var isCurrentPasswordValid = await _userManager.CheckPasswordAsync(user, dto.CurrentPassword);
             if (!isCurrentPasswordValid)
-                return Result<string>.Fail("Current password is incorrect.", "BadRequest");
+                return Result<string>.Fail("Current password is incorrect.", "400");
 
             if (dto.NewPassword != dto.ConfirmPassword)
-                return Result<string>.Fail("New passwords do not match.", "BadRequest");
+                return Result<string>.Fail("New passwords do not match.", "400");
 
             var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
             if (!result.Succeeded)
-                return Result<string>.Fail("Failed to change password.", "BadRequest");
+                return Result<string>.Fail("Failed to change password.", "400");
 
             var claims = new List<Claim>
             {

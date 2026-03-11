@@ -25,7 +25,7 @@ namespace FindexiumAPI.Controllers
             var result = await _authService.Register(dto);
             if (!result.IsSuccess)
             {
-                if (result.Code == "Conflict")
+                if (result.Code == "409")
                     return Conflict(result.ErrorMessage);
                 else
                     return BadRequest(result.ErrorMessage);
@@ -55,7 +55,7 @@ namespace FindexiumAPI.Controllers
             var result = await _authService.ChangePassword(dto);
             if (!result.IsSuccess)
             {
-                if (result.Code == "NotFound")
+                if (result.Code == "404")
                     return NotFound(result.ErrorMessage);
                 else
                     return BadRequest(result.ErrorMessage);

@@ -47,10 +47,10 @@ namespace FindexiumAPI.Repositories
         public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto dto)
         {
             if (dto.Password != dto.ConfirmPassword)
-                return Result<UserDto>.Fail("Passwords do not match.", "BadRequest");
+                return Result<UserDto>.Fail("Passwords do not match.", "400");
 
             if (await _userManager.Users.AnyAsync(u => u.UserName == dto.UserName))
-                return Result<UserDto>.Fail("The UserName mentioned already exists.", "Conflict");
+                return Result<UserDto>.Fail("The UserName mentioned already exists.", "409");
 
             var user = new User
             {
@@ -60,20 +60,20 @@ namespace FindexiumAPI.Repositories
 
             var result = await _userManager.CreateAsync(user, dto.Password);
             if (!result.Succeeded)
-                return Result<UserDto>.Fail($"Unable to create the User: {string.Join(", ", result.Errors.Select(e => e.Description))}", "BadRequest");
+                return Result<UserDto>.Fail($"Unable to create the User: {string.Join(", ", result.Errors.Select(e => e.Description))}", "400");
 
             var roleExists = await _roleManager.RoleExistsAsync(dto.Role);
             if (!roleExists)
             {
                 var addToRoleResult = await _userManager.AddToRoleAsync(user, "User");
                 if (!addToRoleResult.Succeeded)
-                    return Result<UserDto>.Fail($"Unable to add the \"User\" Role to the new User: {string.Join(", ", addToRoleResult.Errors.Select(e => e.Description))}", "BadRequest");
+                    return Result<UserDto>.Fail($"Unable to add the \"User\" Role to the new User: {string.Join(", ", addToRoleResult.Errors.Select(e => e.Description))}", "400");
             }
             else
             {
                 var addToRoleResult = await _userManager.AddToRoleAsync(user, dto.Role);
                 if (!addToRoleResult.Succeeded)
-                    return Result<UserDto>.Fail($"Unable to add the mentionned Role to the new User: {string.Join(", ", addToRoleResult.Errors.Select(e => e.Description))}", "BadRequest");
+                    return Result<UserDto>.Fail($"Unable to add the mentionned Role to the new User: {string.Join(", ", addToRoleResult.Errors.Select(e => e.Description))}", "400");
             }
 
 
@@ -91,20 +91,20 @@ namespace FindexiumAPI.Repositories
         public async Task<Result<UserDto>> UpdateUserAsync(string id, UserDto dto)
         {
             if (await _userManager.Users.AnyAsync(u => u.UserName == dto.UserName && u.Id != id))
-                return Result<UserDto>.Fail("The UserName mentioned already exists.", "Conflict");
+                return Result<UserDto>.Fail("The UserName mentioned already exists.", "409");
 
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
-                return Result<UserDto>.Fail("The Id mentioned does not exist.", "NotFound");
+                return Result<UserDto>.Fail("The Id mentioned does not exist.", "404");
             if (user.Id != dto.Id)
-                return Result<UserDto>.Fail("The Id focused and the Id mentioned are different.", "BadRequest");
+                return Result<UserDto>.Fail("The Id focused and the Id mentioned are different.", "400");
 
             user.UserName = dto.UserName;
             user.FullName = dto.FullName;
             var result = await _userManager.UpdateAsync(user);
 
             if (!result.Succeeded)
-                return Result<UserDto>.Fail($"Unable to update the User: {string.Join(", ", result.Errors.Select(e => e.Description))}", "BadRequest");
+                return Result<UserDto>.Fail($"Unable to update the User: {string.Join(", ", result.Errors.Select(e => e.Description))}", "400");
 
             // Update role if changed
             var currentRoles = await _userManager.GetRolesAsync(user);
@@ -116,11 +116,11 @@ namespace FindexiumAPI.Repositories
 
                 var removeFromRolesResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
                 if (!removeFromRolesResult.Succeeded)
-                    return Result<UserDto>.Fail($"Unable to remove the existing Role: {string.Join(", ", removeFromRolesResult.Errors.Select(e => e.Description))}", "BadRequest");
+                    return Result<UserDto>.Fail($"Unable to remove the existing Role: {string.Join(", ", removeFromRolesResult.Errors.Select(e => e.Description))}", "400");
 
                 var addToRoleResult = await _userManager.AddToRoleAsync(user, dto.Role);
                 if (!addToRoleResult.Succeeded)
-                    return Result<UserDto>.Fail($"Unable to add the new Role: {string.Join(", ", addToRoleResult.Errors.Select(e => e.Description))}", "BadRequest");
+                    return Result<UserDto>.Fail($"Unable to add the new Role: {string.Join(", ", addToRoleResult.Errors.Select(e => e.Description))}", "400");
             }
 
             var updatedUser = await GetUserByIdAsync(user.Id);
@@ -131,11 +131,11 @@ namespace FindexiumAPI.Repositories
         {
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
-                return Result<bool>.Fail("The Id mentioned does not exist.", "NotFound");
+                return Result<bool>.Fail("The Id mentioned does not exist.", "404");
 
             var result = await _userManager.DeleteAsync(user);
             if (!result.Succeeded)
-                return Result<bool>.Fail($"Unable to delete the User: {string.Join(", ", result.Errors.Select(e => e.Description))}", "BadRequest");
+                return Result<bool>.Fail($"Unable to delete the User: {string.Join(", ", result.Errors.Select(e => e.Description))}", "400");
 
             return Result<bool>.Ok(true);
         }
