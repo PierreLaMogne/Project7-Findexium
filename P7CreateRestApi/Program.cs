@@ -145,6 +145,8 @@ app.MapControllers();
 
 // Seed roles on application startup
 await SeedRolesAsync(app);
+// Create the first admin user if no admin exists
+await CreateFirstAdmin(app);
 
 app.Run();
 
@@ -162,5 +164,23 @@ static async Task SeedRolesAsync(WebApplication app)
         {
             await roleManager.CreateAsync(new IdentityRole(role));
         }
+    }
+}
+
+// Method to create the first admin user if no admin exists
+static async Task CreateFirstAdmin(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+    var anyAdmin = await userManager.Users.AnyAsync(u => u.Role == "Admin");
+    if (!anyAdmin)
+    {
+        var adminUser = new User
+        {
+            UserName = "Admin",
+            FullName = "FirstAdmin",
+            Role = "Admin"
+        };
+        await userManager.CreateAsync(adminUser, "Admin123!");
     }
 }
