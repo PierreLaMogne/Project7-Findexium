@@ -19,6 +19,7 @@ namespace FindexiumAPI.Repositories
                 .Select(c => new CurvePointDto
                 {
                     Id = c.Id,
+                    CurveId = c.CurveId,
                     Term = c.Term,
                     CurvePointValue = c.CurvePointValue
                 })
@@ -63,7 +64,7 @@ namespace FindexiumAPI.Repositories
             if (existingCurvePoint == null)
                 return false;
 
-            existingCurvePoint.CurvePointValue = dto.CurvePointValue;
+            existingCurvePoint.CurveId = dto.CurveId;
             existingCurvePoint.Term = dto.Term;
             existingCurvePoint.CurvePointValue = dto.CurvePointValue;
 
