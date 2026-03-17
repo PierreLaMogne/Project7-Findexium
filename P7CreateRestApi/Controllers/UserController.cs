@@ -57,7 +57,7 @@ namespace FindexiumAPI.Controllers
                     return BadRequest(result.ErrorMessage);
             }
 
-            return Ok(result.Data);
+            return CreatedAtAction(nameof(GetUser), new { id = result.Data.Id }, result.Data);
         }
 
         // PUT: api/User/5
