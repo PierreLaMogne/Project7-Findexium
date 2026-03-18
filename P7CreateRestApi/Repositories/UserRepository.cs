@@ -62,20 +62,25 @@ namespace FindexiumAPI.Repositories
             if (!result.Succeeded)
                 return Result<UserDto>.Fail($"Unable to create the User: {string.Join(", ", result.Errors.Select(e => e.Description))}", "400");
 
+            string assignedRole;
             var roleExists = await _roleManager.RoleExistsAsync(dto.Role);
             if (!roleExists)
             {
-                var addToRoleResult = await _userManager.AddToRoleAsync(user, "User");
+                assignedRole = "User";
+                var addToRoleResult = await _userManager.AddToRoleAsync(user, assignedRole);
                 if (!addToRoleResult.Succeeded)
                     return Result<UserDto>.Fail($"Unable to add the \"User\" Role to the new User: {string.Join(", ", addToRoleResult.Errors.Select(e => e.Description))}", "400");
             }
             else
             {
-                var addToRoleResult = await _userManager.AddToRoleAsync(user, dto.Role);
+                assignedRole = dto.Role;
+                var addToRoleResult = await _userManager.AddToRoleAsync(user, assignedRole);
                 if (!addToRoleResult.Succeeded)
                     return Result<UserDto>.Fail($"Unable to add the mentionned Role to the new User: {string.Join(", ", addToRoleResult.Errors.Select(e => e.Description))}", "400");
             }
 
+            user.Role = assignedRole;
+            await _userManager.UpdateAsync(user);
 
             var newUser = new UserDto
             {
@@ -90,14 +95,17 @@ namespace FindexiumAPI.Repositories
         
         public async Task<Result<UserDto>> UpdateUserAsync(string id, UserDto dto)
         {
-            if (await _userManager.Users.AnyAsync(u => u.UserName == dto.UserName && u.Id != id))
-                return Result<UserDto>.Fail("The UserName mentioned already exists.", "409");
+            // First check if the parameter id matches the DTO's Id
+            if (id != dto.Id)
+                return Result<UserDto>.Fail("The Id focused and the Id mentioned are different.", "400");
 
+            // Then check if the user with the id exists
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
-                return Result<UserDto>.Fail("The Id mentioned does not exist.", "404");
-            if (user.Id != dto.Id)
-                return Result<UserDto>.Fail("The Id focused and the Id mentioned are different.", "400");
+                return Result<UserDto>.Fail("The Id mentioned can't be found.", "404");
+
+            if (await _userManager.Users.AnyAsync(u => u.UserName == dto.UserName && u.Id != id))
+                return Result<UserDto>.Fail("The UserName mentioned already exists.", "409");
 
             user.UserName = dto.UserName;
             user.FullName = dto.FullName;
@@ -121,6 +129,9 @@ namespace FindexiumAPI.Repositories
                 var addToRoleResult = await _userManager.AddToRoleAsync(user, dto.Role);
                 if (!addToRoleResult.Succeeded)
                     return Result<UserDto>.Fail($"Unable to add the new Role: {string.Join(", ", addToRoleResult.Errors.Select(e => e.Description))}", "400");
+
+                user.Role = dto.Role;
+                await _userManager.UpdateAsync(user);
             }
 
             var updatedUser = await GetUserByIdAsync(user.Id);
