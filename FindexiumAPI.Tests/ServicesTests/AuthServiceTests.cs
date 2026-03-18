@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace FindexiumAPI.Tests.ControllersTests
+namespace FindexiumAPI.Tests.ServicesTests
 {
     public class AuthServiceTests
     {

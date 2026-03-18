@@ -7,7 +7,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace FindexiumAPI.Tests.RespositoriesTests
+namespace FindexiumAPI.Tests.RepositoriesTests
 {
     public class RuleNameRepositoryTests : IDisposable
     {

@@ -1,20 +1,15 @@
-﻿using FindexiumAPI.Common;
-using FindexiumAPI.Data;
+﻿using FindexiumAPI.Data;
 using FindexiumAPI.Domain;
 using FindexiumAPI.Models;
 using FindexiumAPI.Repositories;
-using FindexiumAPI.Tests.RespositoriesTests;
 using FindexiumAPI.Tests.TestData;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using NSubstitute;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using Xunit;
 
-namespace FindexiumAPI.Tests.RespositoriesTests
+namespace FindexiumAPI.Tests.RepositoriesTests
 {
     public class UserRepositoryTests : IDisposable
     {

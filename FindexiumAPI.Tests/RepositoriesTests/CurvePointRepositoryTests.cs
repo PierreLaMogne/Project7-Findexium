@@ -5,11 +5,9 @@ using FindexiumAPI.Repositories;
 using FindexiumAPI.Tests.TestData;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 using Xunit;
-using Xunit.Sdk;
 
-namespace FindexiumAPI.Tests.RespositoriesTests
+namespace FindexiumAPI.Tests.RepositoriesTests
 {
     public class CurvePointRepositoryTests : IDisposable
     {
