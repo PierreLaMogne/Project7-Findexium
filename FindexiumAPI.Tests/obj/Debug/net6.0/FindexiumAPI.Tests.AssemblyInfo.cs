@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FindexiumAPI.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fc72832e21c250299efc6944369ed707044bdc1a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+82890886dae6fc128e0e822413af0202b253f671")]
 [assembly: System.Reflection.AssemblyProductAttribute("FindexiumAPI.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FindexiumAPI.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
