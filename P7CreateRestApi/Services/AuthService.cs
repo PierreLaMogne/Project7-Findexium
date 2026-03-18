@@ -84,7 +84,7 @@ namespace FindexiumAPI.Services
             if (!isCurrentPasswordValid)
                 return Result<string>.Fail("Current password is incorrect.", "400");
 
-            if (dto.NewPassword != dto.ConfirmPassword)
+            if (dto.NewPassword != dto.ConfirmNewPassword)
                 return Result<string>.Fail("New passwords do not match.", "400");
 
             var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
