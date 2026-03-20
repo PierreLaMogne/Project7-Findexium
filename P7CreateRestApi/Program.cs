@@ -1,7 +1,6 @@
 ﻿using FindexiumAPI.Common;
 using FindexiumAPI.Data;
 using FindexiumAPI.Domain;
-using FindexiumAPI.logs;
 using FindexiumAPI.Repositories;
 using FindexiumAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -10,9 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
-using Serilog.Context;
 using Serilog.Events;
-using Serilog.Formatting.Json;
 using System.Security.Claims;
 using System.Text;
 
@@ -59,13 +56,13 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<LocalDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
-
+// Configure Identity services
 builder.Services.AddIdentity<User, IdentityRole>()
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<LocalDbContext>()
                 .AddDefaultTokenProviders();
 
+// Configure password requirements
 builder.Services.Configure<IdentityOptions>(options =>
 {
     options.Password.RequireDigit = true;
@@ -76,6 +73,8 @@ builder.Services.Configure<IdentityOptions>(options =>
     options.Password.RequiredUniqueChars = 1;
 });
 
+// Configure JWT authentication
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -95,6 +94,7 @@ builder.Services.AddAuthentication(options =>
                     };
                 });
 
+// Define authorization policies for Admin and User roles
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("Users", p => p.RequireRole("User", "Admin"));
@@ -108,7 +108,7 @@ builder.Services.AddScoped<ITradeRepository, TradeRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-
+// Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
@@ -131,20 +131,48 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.UseMiddleware<UserContextMiddleware>();
 app.UseSerilogRequestLogging(options =>
 {
-    // Message template PERSONNALISÉ avec UserNameId
+    // Enrich log events with user information from the HttpContext
     options.MessageTemplate = "UserId: {UserNameId} | HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+
+    // Catching all HTTP responses to enrich logs
+    options.GetLevel = (httpContext, elapsed, ex) =>
+    {
+        if (ex != null)
+            return LogEventLevel.Error;
+
+        var statusCode = httpContext.Response.StatusCode;
+
+        if (statusCode >= 500)
+            return LogEventLevel.Error;
+
+        if (statusCode >= 400)
+            return LogEventLevel.Warning;
+
+        return LogEventLevel.Information;
+    };
+
+    // Get the user ID from the claims or fallback "Anonymous"
+    options.EnrichDiagnosticContext = (diag, httpContext) =>
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                   ?? httpContext.User.Identity?.Name
+                   ?? "Anonymous";
+        diag.Set("UserNameId", userId);
+
+        diag.Set("RequestHost", httpContext.Request.Host.Value);
+    };
 });
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
 // Seed roles on application startup
 await SeedRolesAsync(app);
+
 // Create the first admin user if no admin exists
 await CreateFirstAdmin(app);
 

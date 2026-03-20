@@ -15,6 +15,7 @@ C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Test
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\FindexiumAPI.Tests.dll
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\FindexiumAPI.Tests.pdb
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\Castle.Core.dll
+C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\FluentAssertions.dll
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\Microsoft.AspNetCore.Cryptography.Internal.dll
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\Microsoft.AspNetCore.Cryptography.KeyDerivation.dll
@@ -23,6 +24,7 @@ C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Test
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\Microsoft.Data.SqlClient.dll
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.dll
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.InMemory.dll
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Relational.dll
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.SqlServer.dll
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\Microsoft.Extensions.Caching.Abstractions.dll
@@ -171,5 +173,3 @@ C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Test
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\obj\Debug\net6.0\FindexiumAPI.Tests.pdb
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\obj\Debug\net6.0\FindexiumAPI.Tests.genruntimeconfig.cache
 C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\obj\Debug\net6.0\ref\FindexiumAPI.Tests.dll
-C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\FluentAssertions.dll
-C:\Users\pierr\Documents\Formation OpenClassrooms\FindexiumAPI\FindexiumAPI.Tests\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.InMemory.dll
