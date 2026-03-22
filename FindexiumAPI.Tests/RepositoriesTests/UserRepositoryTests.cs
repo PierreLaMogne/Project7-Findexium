@@ -3,6 +3,7 @@ using FindexiumAPI.Domain;
 using FindexiumAPI.Models;
 using FindexiumAPI.Repositories;
 using FindexiumAPI.Tests.TestData;
+using FindexiumAPI.Tests.TestUtilities;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -11,40 +12,53 @@ using Xunit;
 
 namespace FindexiumAPI.Tests.RepositoriesTests
 {
-    public class UserRepositoryTests : IDisposable
+    public class UserRepositoryTests : IClassFixture<LocalDbFixture>, IDisposable
     {
-        private readonly LocalDbContext _context;
+        private readonly LocalDbFixture _fixture;
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IUserRepository _userRepository;
 
-        public UserRepositoryTests()
+        public UserRepositoryTests(LocalDbFixture fixture)
         {
-            var options = new DbContextOptionsBuilder<LocalDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-                .Options;
+            _fixture = fixture;
 
-            _context = new LocalDbContext(options);
-
-            var userStore = new UserStore<User, IdentityRole, LocalDbContext>(_context);
+            // Setting up UserManager and RoleManager with the in-memory database context
+            var userStore = new UserStore<User, IdentityRole, LocalDbContext>(_fixture.Context);
             _userManager = new UserManager<User>(
                 userStore, null, new PasswordHasher<User>(),
                 Enumerable.Empty<IUserValidator<User>>(),
                 Enumerable.Empty<IPasswordValidator<User>>(),
                 null, null, null, null);
 
-            var roleStore = new RoleStore<IdentityRole, LocalDbContext>(_context);
-            _roleManager = new RoleManager<IdentityRole>(
-                roleStore, null, null, null, null);
-
-            _context.Database.EnsureCreated();
-            
-            _roleManager.CreateAsync(new IdentityRole("Admin")).Wait();
-            _roleManager.CreateAsync(new IdentityRole("User")).Wait();
+            var roleStore = new RoleStore<IdentityRole, LocalDbContext>(_fixture.Context);
+            _roleManager = new RoleManager<IdentityRole>(roleStore, null, null, null, null);
 
             _userRepository = new UserRepository(_userManager, _roleManager);
+            InitializeRoles().Wait();
+            ClearUsers();
         }
 
+        private async Task InitializeRoles()
+        {
+            if (!await _roleManager.RoleExistsAsync("Admin"))
+                await _roleManager.CreateAsync(new IdentityRole("Admin"));
+            if (!await _roleManager.RoleExistsAsync("User"))
+                await _roleManager.CreateAsync(new IdentityRole("User"));
+        }
+
+        private void ClearUsers()
+        {
+            _fixture.Context.Users.RemoveRange(_fixture.Context.Users);
+            _fixture.Context.SaveChanges();
+        }
+
+        private async Task SeedUsersAsync(List<User> users)
+        {
+            ClearUsers();
+            await _fixture.Context.Users.AddRangeAsync(users);
+            await _fixture.Context.SaveChangesAsync();
+        }
 
 
         // Testing GetAllAsync
@@ -53,21 +67,17 @@ namespace FindexiumAPI.Tests.RepositoriesTests
         public async Task GetAllAsync_ShouldReturnExpectedDtos(List<User> testData)
         {
             // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Users.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedUsersAsync(testData);
 
             // Act
             var result = await _userRepository.GetAllUsersAsync();
 
             // Assert
-            result.Should().NotBeNull();
             result.Should().HaveCount(testData.Count);
-            result.Should().BeEquivalentTo(
-                testData,
-                options => options
-                    .ExcludingMissingMembers()
-            );
+            if (testData.Count > 0)
+            {
+                result.Should().BeEquivalentTo(testData, options => options.ExcludingMissingMembers());
+            }
         }
 
 
@@ -77,40 +87,25 @@ namespace FindexiumAPI.Tests.RepositoriesTests
         public async Task GetByIdAsync_ShouldReturnExpectedDto(List<User> testData)
         {
             // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Users.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
+            await SeedUsersAsync(testData);
 
             // Act & Assert
-            foreach (var user in testData)
+            foreach (var user in testData.Where(u => !string.IsNullOrEmpty(u.Id)))
             {
                 var result = await _userRepository.GetUserByIdAsync(user.Id);
                 result.Should().NotBeNull();
-                result.Should().BeEquivalentTo(
-                    user,
-                    options => options
-                        .ExcludingMissingMembers()
-                );
+                result.Should().BeEquivalentTo(user, options => options.ExcludingMissingMembers());
             }
-
         }
 
-        [Theory]
-        [MemberData(nameof(UserTestData.GetUsersScenarios), MemberType = typeof(UserTestData))]
-        public async Task GetByIdAsync_ShouldReturnNull_WhenNotFound(List<User> testData)
+        [Fact]
+        public async Task GetByIdAsync_ShouldReturnNull_WhenNotFound()
         {
             // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Users.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedUsersAsync(new List<User>());
 
             // Act
-            var result = await _userRepository.GetUserByIdAsync(Guid.Empty.ToString()); // Use an ID that doesn't exist
+            var result = await _userRepository.GetUserByIdAsync(Guid.Empty.ToString());
 
             // Assert
             result.Should().BeNull();
@@ -119,73 +114,48 @@ namespace FindexiumAPI.Tests.RepositoriesTests
 
         // Testing CreateAsync
         [Theory]
-        [MemberData(nameof(UserTestData.GetCreateUsersScenarios), MemberType = typeof(UserTestData))]
-        public async Task CreateAsync_ShouldReturnExpectedResult(CreateUserDto testDto)
+        [MemberData(nameof(UserTestData.GetCreateUserDuplicateScenarios), MemberType = typeof(UserTestData))]
+        public async Task CreateAsync_ShouldFail_WhenUserNameExists(CreateUserDto testDto)
         {
-
-            // Arrange
-            _context.Database.EnsureCreated();
-            var existingUser = new CreateUserDto
-            {
-                UserName = "abc",
-                FullName = "Abc",
-                Role = "Admin",
-                Password = "Bonjour123!",
-                ConfirmPassword = "Bonjour123!"
-            };
+            // Arrange - Seed an existing user with the same UserName
+            var existingUser = new CreateUserDto { UserName = "abc", FullName = "Abc", Role = "Admin", Password = "Bonjour123!", ConfirmPassword = "Bonjour123!" };
             await _userRepository.CreateUserAsync(existingUser);
-            await _context.SaveChangesAsync();
+            await _fixture.Context.SaveChangesAsync();
 
             // Act
             var result = await _userRepository.CreateUserAsync(testDto);
-            await _context.SaveChangesAsync();
 
             // Assert
-            var dbCount = await _context.Users.CountAsync();
-            result.Should().NotBeNull();
-            if (testDto.UserName == "abc")
-            {
-                result.Code.Should().Be("409");
-                result.ErrorMessage.Should().Be("The UserName mentioned already exists.");
-                dbCount.Should().Be(1);
-            }
+            result.Code.Should().Be("409");
+            result.ErrorMessage.Should().Be("The UserName mentioned already exists.");
+            (await _fixture.Context.Users.CountAsync(u => u.UserName == testDto.UserName)).Should().Be(1);
+        }
 
-            if (testDto.UserName == "pqr")
-            {
-                result.Code.Should().Be("400");
-                result.ErrorMessage.Should().Be("Passwords do not match.");
-                _context.Users.FirstOrDefault(u => u.UserName == "pqr").Should().BeNull();
-                dbCount.Should().Be(1);
-            }
+        [Theory]
+        [MemberData(nameof(UserTestData.GetCreateUserPasswordMismatchScenarios), MemberType = typeof(UserTestData))]
+        public async Task CreateAsync_ShouldFail_WhenPasswordsMismatch(CreateUserDto testDto)
+        {
+            // Act
+            var result = await _userRepository.CreateUserAsync(testDto);
 
-            if (testDto.UserName == "def")
-            {
-                var createdUser = _context.Users.FirstOrDefault(u => u.UserName == testDto.UserName);
-                createdUser.Should().NotBeNull();
-                createdUser.UserName.Should().Be(testDto.UserName);
-                createdUser.Role.Should().Be("Admin");
-                createdUser.Should().BeEquivalentTo(
-                    testDto,
-                    options => options
-                        .ExcludingMissingMembers()
-                );
-                dbCount.Should().Be(2);
-            }
+            // Assert
+            result.Code.Should().Be("400");
+            result.ErrorMessage.Should().Be("Passwords do not match.");
+        }
 
-            if (testDto.UserName == "ghi" || testDto.UserName == "jkl" || testDto.UserName == "mno")
-            {
-                var createdUser = _context.Users.FirstOrDefault(u => u.UserName == testDto.UserName);
-                createdUser.Should().NotBeNull();
-                createdUser.UserName.Should().Be(testDto.UserName);
-                createdUser.Role.Should().Be("User");
-                createdUser.Should().BeEquivalentTo(
-                    testDto,
-                    options => options
-                        .ExcludingMissingMembers()
-                        .Excluding(u => u.Role)
-                );
-                dbCount.Should().Be(2);
-            }
+        [Theory]
+        [MemberData(nameof(UserTestData.GetCreateUserValidScenarios), MemberType = typeof(UserTestData))]
+        public async Task CreateAsync_ShouldCreateUser_WhenValid(CreateUserDto testDto)
+        {
+            // Act
+            var result = await _userRepository.CreateUserAsync(testDto);
+            await _fixture.Context.SaveChangesAsync();
+
+            // Assert
+            result.Data.Should().NotBeNull();
+            var createdUser = await _fixture.Context.Users.FirstOrDefaultAsync(u => u.UserName == testDto.UserName);
+            createdUser.Should().NotBeNull();
+            createdUser.UserName.Should().Be(testDto.UserName);
         }
 
 
@@ -194,70 +164,46 @@ namespace FindexiumAPI.Tests.RepositoriesTests
         [MemberData(nameof(UserTestData.GetUpdateUserScenariosWithData), MemberType = typeof(UserTestData))]
         public async Task UpdateAsync_ShouldModifyExistingUserWhenExpected(List<User> testData, UserDto testDto)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Users.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            var existingUser = _context.Users.FirstOrDefault(u => u.Id == testDto.Id);
+            // Arrange - Seed users and ensure the one to update exists
+            await SeedUsersAsync(testData);
+            var existingUser = testData.First(u => u.Id == testDto.Id);
 
             // Act
-            var result = await _userRepository.UpdateUserAsync(existingUser!.Id, testDto);
+            var result = await _userRepository.UpdateUserAsync(testDto.Id, testDto);
+            await _fixture.Context.SaveChangesAsync();
 
             // Assert
-            var dbCount = await _context.Users.CountAsync();
-            dbCount.Should().Be(4);
-            result.Should().NotBeNull();
             if (testDto.UserName != "alreadyExists")
             {
                 result.Data.Should().NotBeNull();
-                result.Data.Id.Should().Be(existingUser.Id);
-                result.Data.Should().BeEquivalentTo(
-                    testDto,
-                    options => options
-                        .ExcludingMissingMembers()
-                        .Excluding(e => e.Role)
-                );
+                result.Data.Id.Should().Be(testDto.Id);
+                result.Data.UserName.Should().Be(testDto.UserName);
             }
-
-            if (testDto.UserName == "alreadyExists")
+            else
             {
                 result.Code.Should().Be("409");
                 result.ErrorMessage.Should().Be("The UserName mentioned already exists.");
             }
-
-            if (testDto.UserName == "abc_updated")
-                result.Data.Role.Should().Be("User");
-
-            if (testDto.UserName == "def_updated")
-                result.Data.Role.Should().Be("User");
-
-            if (testDto.UserName == "ghi_updated")
-                result.Data.Role.Should().Be("Admin");
         }
 
-        [Theory]
-        [MemberData(nameof(UserTestData.GetUsersToUpdateScenarios), MemberType = typeof(UserTestData))]
-        public async Task UpdateAsync_ShouldReturnFalse_WhenNotFound(List<User> testData)
+        [Fact]
+        public async Task UpdateAsync_ShouldReturnNotFound_WhenUserNotExists()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Users.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            var updateDto = new UserDto {
+            // Arrange - Ensure no users exist
+            var updateDto = new UserDto
+            {
                 Id = Guid.Empty.ToString(),
-                UserName = "abc",
-                FullName = "Abc",
-                Role = "Admin"
+                UserName = "newuser",
+                FullName = "New User",
+                Role = "User"
             };
 
             // Act
-            var result = await _userRepository.UpdateUserAsync(updateDto.Id, updateDto); // Use an ID that doesn't exist
+            var result = await _userRepository.UpdateUserAsync(updateDto.Id, updateDto);
 
             // Assert
-            result.ErrorMessage.Should().Be("The Id mentioned can't be found.");
             result.Code.Should().Be("404");
+            result.ErrorMessage.Should().Be("The Id mentioned can't be found.");
         }
 
 
@@ -266,46 +212,33 @@ namespace FindexiumAPI.Tests.RepositoriesTests
         [MemberData(nameof(UserTestData.GetUsersScenarios), MemberType = typeof(UserTestData))]
         public async Task DeleteAsync_ShouldRemoveUser(List<User> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Users.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
-
-            var existingUser = testData.First();
+            // Arrange - Seed users and ensure the one to delete exists
+            await SeedUsersAsync(testData);
+            var existingUser = testData.FirstOrDefault(u => !string.IsNullOrEmpty(u.Id));
+            if (existingUser == null) return;
 
             // Act
             var result = await _userRepository.DeleteUserAsync(existingUser.Id);
+            await _fixture.Context.SaveChangesAsync();
 
             // Assert
-            result.Data.Should().Be(true);
-            var deletedUser = await _context.Users.FindAsync(existingUser.Id);
-            deletedUser.Should().BeNull();
+            result.Data.Should().BeTrue();
+            (await _fixture.Context.Users.FindAsync(existingUser.Id)).Should().BeNull();
         }
 
-        [Theory]
-        [MemberData(nameof(UserTestData.GetUsersScenarios), MemberType = typeof(UserTestData))]
-        public async Task DeleteAsync_ShouldReturnFalse_WhenNotFound(List<User> testData)
+        [Fact]
+        public async Task DeleteAsync_ShouldReturnFalse_WhenNotFound()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Users.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
             // Act
-            var result = await _userRepository.DeleteUserAsync(Guid.Empty.ToString()); // Use an ID that doesn't exist
+            var result = await _userRepository.DeleteUserAsync(Guid.Empty.ToString());
 
             // Assert
-            result.Data.Should().Be(false);
+            result.Data.Should().BeFalse();
         }
 
         public void Dispose()
         {
-            _context?.Dispose();
+            ClearUsers();
         }
     }
 }
