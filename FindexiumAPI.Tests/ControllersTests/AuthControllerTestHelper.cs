@@ -2,6 +2,7 @@
 using FindexiumAPI.Controllers;
 using FindexiumAPI.Data;
 using FindexiumAPI.Domain;
+using FindexiumAPI.Models;
 using FindexiumAPI.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -52,20 +53,38 @@ namespace FindexiumAPI.Tests.ControllersTests
         }
 
         // Helper method to create an authenticated ControllerContext with specified user claims
-        public static ControllerContext CreateAuthenticatedContext(string userId, string role = "User")
+        public static ControllerContext CreateAuthenticatedContext(string userId, string? userName = null, string role = "User")
         {
-            var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, userId),
-            new Claim(ClaimTypes.Name, $"user{userId}"),
-            new Claim(ClaimTypes.Role, role)
-        };
+            userName ??= $"user{userId}";
+
+            var claims = new List<Claim> {
+                new Claim(ClaimTypes.NameIdentifier, userId),
+                new Claim(ClaimTypes.Name, userName),
+                new Claim(ClaimTypes.Role, role)
+            };
 
             var identity = new ClaimsIdentity(claims, "TestAuth");
             var principal = new ClaimsPrincipal(identity);
 
             var httpContext = new DefaultHttpContext { User = principal };
             return new ControllerContext { HttpContext = httpContext };
+        }
+
+        // Helper method to register a user and return the created user entity
+        public static async Task<User> RegisterUserAsync(IServiceScope scope, string userName = "testuser", string password = "Password123!")
+        {
+            var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
+
+            await authService.Register(new RegisterDto
+            {
+                UserName = userName,
+                FullName = "Test User",
+                Password = password,
+                ConfirmPassword = password
+            });
+
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+            return await userManager.FindByNameAsync(userName);
         }
     }
 }
