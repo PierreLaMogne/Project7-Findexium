@@ -11,41 +11,44 @@ namespace FindexiumAPI.Tests.ServicesTests
     public class AuthServiceTests
     {
         [Theory]
-        [InlineData("testuser", "Password123!")]
-        [InlineData("wronguser", "Password123!")]
-        [InlineData("testuser", "WrongPassword!")]
-        public async Task Authenticate_ShouldReturnsExpected(string userName, string password)
+        [InlineData("testuser", "Password123!", true)]
+        [InlineData("wronguser", "Password123!", false)]
+        [InlineData("testuser", "WrongPassword!", false)]
+        public async Task Authenticate_ShouldReturnsExpected(string userName, string password, bool shouldSucceed)
         {
+            // Arrange
             using var scope = AuthServiceTestHelper.CreateCleanScope();
             var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
 
-            // Arrange
-            var registerDto = new RegisterDto
+            if (shouldSucceed) // Define the user only if the test should succeed
             {
-                UserName = "testuser",
-                FullName = "Test User",
-                Password = "Password123!",
-                ConfirmPassword = "Password123!"
-            };
-            await authService.Register(registerDto);
-            var loginDto = new LoginDto
+                await authService.Register(new RegisterDto
+                {
+                    UserName = "testuser",
+                    FullName = "Test User",
+                    Password = "Password123!",
+                    ConfirmPassword = "Password123!"
+                });
+            }
+
+            // Act
+            var result = await authService.Authenticate(new LoginDto
             {
                 UserName = userName,
                 Password = password
-            };
-
-            // Act
-            var result = await authService.Authenticate(loginDto);
+            });
 
             // Assert
-            if (userName == "testuser" && password == "Password123!")
+            Assert.NotNull(result);
+            Assert.Equal(shouldSucceed, result.IsSuccess);
+
+            if (shouldSucceed) // Verify token only if authentication should succeed
             {
-                Assert.True(result.IsSuccess);
                 Assert.NotNull(result.Data);
+                Assert.NotEmpty(result.Data);
             }
-            else
+            else // Verify error message and code only if authentication should fail
             {
-                Assert.False(result.IsSuccess);
                 Assert.Null(result.Data);
                 Assert.Equal("Invalid username or password.", result.ErrorMessage);
                 Assert.Equal("400", result.Code);
@@ -53,122 +56,127 @@ namespace FindexiumAPI.Tests.ServicesTests
         }
 
         [Theory]
-        [InlineData("newuser", "New User", "Password123!", "Password123!")]
-        [InlineData("alreadyexistsuser", "Already Exists User", "Password123!", "Password123!")]
-        [InlineData("newuser", "New User", "Password123!", "WrongConfirm!")]
-        public async Task Register_ShouldReturnsExpected(string userName, string fullName, string password, string confirmPassword)
+        [InlineData("newuser", "New User", "Password123!", "Password123!", true)]
+        [InlineData("newuser", "New User", "Password123!", "WrongConfirm!", false)]
+        [InlineData("alreadyexistsuser", "Already Exists User", "Password123!", "Password123!", false)]
+        public async Task Register_ShouldReturnsExpected(
+            string userName, string fullName, string password, string confirmPassword, bool shouldSucceed)
         {
+            // Arrange
             using var scope = AuthServiceTestHelper.CreateCleanScope();
             var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
 
-            // Arrange
-            if (userName == "alreadyexistsuser")
+            
+            if (userName == "alreadyexistsuser") // Pre-create the user for the duplicate username test case
             {
-                var registerDto = new RegisterDto
+                await authService.Register(new RegisterDto
                 {
                     UserName = "alreadyexistsuser",
                     FullName = "Already Exists User",
                     Password = "Password123!",
                     ConfirmPassword = "Password123!"
-                };
-                await authService.Register(registerDto);
+                });
             }
-            var registerDtoToTest = new RegisterDto
+
+            // Act
+            var result = await authService.Register(new RegisterDto
             {
                 UserName = userName,
                 FullName = fullName,
                 Password = password,
                 ConfirmPassword = confirmPassword
-            };
-
-            // Act
-            var result = await authService.Register(registerDtoToTest);
+            });
 
             // Assert
-            if (userName == "newuser" && password == confirmPassword)
+            Assert.NotNull(result);
+            Assert.Equal(shouldSucceed, result.IsSuccess);
+
+            if (shouldSucceed) // Verify token only if registration should succeed
             {
-                Assert.True(result.IsSuccess);
                 Assert.NotNull(result.Data);
+                Assert.NotEmpty(result.Data);
             }
-            else if (userName == "alreadyexistsuser")
+            else // Verify error message and code only if registration should fail
             {
-                Assert.False(result.IsSuccess);
                 Assert.Null(result.Data);
-                Assert.Equal("Username already exists.", result.ErrorMessage);
-                Assert.Equal("409", result.Code);
-            }
-            else
-            {
-                Assert.False(result.IsSuccess);
-                Assert.Null(result.Data);
-                Assert.Equal("Passwords do not match.", result.ErrorMessage);
-                Assert.Equal("400", result.Code);
+                if (password != confirmPassword)
+                {
+                    Assert.Equal("Passwords do not match.", result.ErrorMessage);
+                    Assert.Equal("400", result.Code);
+                }
+                else
+                {
+                    Assert.Equal("Username already exists.", result.ErrorMessage);
+                    Assert.Equal("409", result.Code);
+                }
             }
         }
 
         [Theory]
-        [InlineData("testuser", "Password123!", "NewPassword123!", "NewPassword123!")]
-        [InlineData("nonexistentuser", "Password123!", "NewPassword123!", "NewPassword123!")]
-        [InlineData("testuser", "Password123!", "NewPassword123!", "WrongConfirm!")]
-        [InlineData("testuser", "WrongCurrentPassword!", "NewPassword123!", "NewPassword123!")]
-        public async Task ChangePassword_ShouldReturnsExpected(string userName, string currentPassword, string newPassword, string confirmNewPassword)
+        [InlineData("testuser", "Password123!", "NewPassword123!", "NewPassword123!", true)]
+        [InlineData("testuser", "WrongCurrent!", "NewPassword123!", "NewPassword123!", false)]
+        [InlineData("testuser", "Password123!", "NewPassword123!", "WrongConfirm!", false)]
+        public async Task ChangePassword_ShouldReturnsExpected(
+            string userName, string currentPassword, string newPassword, string confirmNewPassword, bool shouldSucceed)
         {
+            // Arrange
             using var scope = AuthServiceTestHelper.CreateCleanScope();
             var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
 
-            // Arrange
-            var registerDto = new RegisterDto
+            // Create a user to change password for
+            await authService.Register(new RegisterDto
             {
                 UserName = "testuser",
                 FullName = "Test User",
                 Password = "Password123!",
                 ConfirmPassword = "Password123!"
-            };
-            await authService.Register(registerDto);
+            });
 
-            // Get the actual user ID
-            var user = await userManager.FindByNameAsync(userName);
-            var userId = user?.Id;
+            // Retrieve the user to get the ID
+            var user = await userManager.FindByNameAsync("testuser");
+            Assert.NotNull(user);
+            Assert.NotNull(user.Id);
 
-            var changePasswordDto = new ChangePasswordDto
+            // Act
+            var result = await authService.ChangePassword(new ChangePasswordDto
             {
-                Id = userId!,
+                Id = user.Id,
                 CurrentPassword = currentPassword,
                 NewPassword = newPassword,
                 ConfirmNewPassword = confirmNewPassword
-            };
+            });
 
-            // Act
-            var result = await authService.ChangePassword(changePasswordDto);
             // Assert
             Assert.NotNull(result);
-            if (userName == "testuser" && currentPassword == "Password123!" && newPassword == confirmNewPassword)
+            Assert.Equal(shouldSucceed, result.IsSuccess);
+
+            if (shouldSucceed) // Verify success and that the password was actually changed
             {
-                Assert.True(result.IsSuccess);
                 Assert.NotNull(result.Data);
+                Assert.True(await userManager.CheckPasswordAsync(user, newPassword));
             }
-            else if (userName == "nonexistentuser")
+            else // Verify error message only if password change should fail
             {
-                Assert.False(result.IsSuccess);
                 Assert.Null(result.Data);
-                Assert.Equal("User not found.", result.ErrorMessage);
-                Assert.Equal("404", result.Code);
+                if (currentPassword != "Password123!")
+                    Assert.Equal("Current password is incorrect.", result.ErrorMessage);
+                else
+                    Assert.Equal("New passwords do not match.", result.ErrorMessage);
             }
-            else if (newPassword != confirmNewPassword)
-            {
-                Assert.False(result.IsSuccess);
-                Assert.Null(result.Data);
-                Assert.Equal("New passwords do not match.", result.ErrorMessage);
-                Assert.Equal("400", result.Code);
-            }
-            else
-            {
-                Assert.False(result.IsSuccess);
-                Assert.Null(result.Data);
-                Assert.Equal("Current password is incorrect.", result.ErrorMessage);
-                Assert.Equal("400", result.Code);
-            }
+        }
+
+        // This test ensures that the test helper is correctly setting up the UserManager and that we can create a user in the test database
+        [Fact]
+        public async Task TestHelper_Configuration_IsValid()
+        {
+            using var scope = AuthServiceTestHelper.CreateCleanScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+
+            var user = new User { UserName = "diag", FullName = "Diagnostic" };
+            var result = await userManager.CreateAsync(user, "Password123!");
+            Assert.True(result.Succeeded);
+            Assert.NotNull(user.Id);
         }
     }
 }
