@@ -9,6 +9,29 @@ namespace FindexiumAPI.Tests.Controllers
 {
     public class BidListControllerTests
     {
+        // Helper method to create a controller with a specific user role
+        private BidListController CreateControllerWithRole(string? role, IBidListRepository? repo = null)
+        {
+            repo ??= Substitute.For<IBidListRepository>();
+            var controller = new BidListController(repo);
+
+            switch (role)
+            {
+                case "Admin":
+                    controller.InitializeAdminUser();
+                    break;
+                case "User":
+                    controller.InitializeRegularUser();
+                    break;
+                default:
+                    controller.InitializeUnauthenticatedUser();
+                    break;
+            }
+
+            return controller;
+        }
+
+
         // Tests for GetBidLists
         [Theory]
         [InlineData("Admin")]
@@ -18,17 +41,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IBidListRepository>();
-            repo
-                .GetAllAsync()
-                .Returns(new List<BidListDto> { new BidListDto { BidListId = 1 }, new BidListDto { BidListId = 2 } });
-            var controller = new BidListController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetAllAsync().Returns(new List<BidListDto> { new() { BidListId = 1 }, new() { BidListId = 2 } }); // Simulate two BidList entries in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<IEnumerable<BidListDto>> result;
@@ -40,14 +54,14 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetBidLists();
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" || role == "User")
             {
                 var okResult = Assert.IsType<OkObjectResult>(result.Result);
                 var bidLists = Assert.IsAssignableFrom<IEnumerable<BidListDto>>(okResult.Value);
                 Assert.Equal(2, bidLists.Count());
             }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
         [Theory]
@@ -58,17 +72,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IBidListRepository>();
-            repo
-                .GetAllAsync()
-                .Returns(new List<BidListDto>());
-            var controller = new BidListController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetAllAsync().Returns(new List<BidListDto>()); // Simulate no BidList entries in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<IEnumerable<BidListDto>> result;
@@ -80,13 +85,13 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetBidLists();
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" || role == "User")
             {
                 var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
                 Assert.Equal("No BidList found.", notFoundResult.Value);
             }
+            else
+            Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
         // Tests for GetBidList
@@ -98,17 +103,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IBidListRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new BidListDto { BidListId = 1 });
-            var controller = new BidListController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new BidListDto { BidListId = 1 }); // Simulate one BidList entry in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<BidListDto> result;
@@ -120,15 +116,15 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetBidList(1);
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" || role == "User")
             {
                 var okResult = Assert.IsType<OkObjectResult>(result.Result);
                 var bidList = Assert.IsAssignableFrom<BidListDto>(okResult.Value);
                 Assert.Equal(1, bidList.BidListId);
 
             }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
         [Theory]
@@ -139,17 +135,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IBidListRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns((BidListDto?)null);
-            var controller = new BidListController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns((BidListDto?)null); // Simulate no BidList entry with the specified ID
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<BidListDto> result;
@@ -161,14 +148,15 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetBidList(1);
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" || role == "User")
             {
                 var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
                 Assert.Equal("The Id mentioned does not exist.", notFoundResult.Value);
             }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);
         }
+
 
         // Tests for PostBidList
         [Theory]
@@ -178,23 +166,14 @@ namespace FindexiumAPI.Tests.Controllers
         public async Task PostBidList_AsDifferentRoles_ReturnsExcepted(string? role)
         {
             // Arrange
-                var repo = Substitute.For<IBidListRepository>();
-                repo
-                    .AddAsync(Arg.Any<BidListDto>())
-                    .Returns(callInfo => 
+            var repo = Substitute.For<IBidListRepository>();
+            repo.AddAsync(Arg.Any<BidListDto>()).Returns(callInfo => 
                     {
                         var dto = callInfo.Arg<BidListDto>();
                         dto.BidListId = 1;
                         return dto;
-                    });
-                var controller = new BidListController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+                    }); // Simulate adding a new BidList entry to the repository and returning it with an assigned ID
+            var controller = CreateControllerWithRole(role, repo);
 
             var newBidList = new BidListDto { Account = "TestAccount", BidType = "TestType", BidQuantity = 100 };
 
@@ -229,14 +208,7 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IBidListRepository>();
-            var controller = new BidListController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            var controller = CreateControllerWithRole(role, repo);
 
             var invalidBidList = new BidListDto { Account = "", BidType = "", BidQuantity = null };
 
@@ -269,20 +241,9 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IBidListRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new BidListDto { BidListId = 1 });
-            repo
-                .UpdateAsync(1, Arg.Any<BidListDto>())
-                .Returns(true);
-            var controller = new BidListController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new BidListDto { BidListId = 1 }); // Simulate an existing BidList entry with the specified ID in the repository
+            repo.UpdateAsync(1, Arg.Any<BidListDto>()).Returns(true); // Simulate updating an existing BidList entry in the repository successfully
+            var controller = CreateControllerWithRole(role, repo);
 
             var updatedBidList = new BidListDto { BidListId = 1, Account = "UpdatedAccount", BidType = "UpdatedType", BidQuantity = 200 };
 
@@ -310,17 +271,11 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IBidListRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns((BidListDto?)null);
-            var controller = new BidListController(repo);
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns((BidListDto?)null); // Simulate no existing BidList entry with the specified ID in the repository
+            var controller = CreateControllerWithRole(role, repo);
+
             var updatedBidList = new BidListDto { BidListId = 1, Account = "UpdatedAccount", BidType = "UpdatedType", BidQuantity = 200 };
+
             // Act
             IActionResult result;
 
@@ -348,17 +303,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IBidListRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new BidListDto { BidListId = 1 });
-            var controller = new BidListController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new BidListDto { BidListId = 1 }); // Simulate an existing BidList entry with the specified ID in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             var invalidBidList = new BidListDto { BidListId = 1, Account = "", BidType = "", BidQuantity = null };
 
@@ -390,17 +336,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IBidListRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new BidListDto { BidListId = 1 });
-            var controller = new BidListController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new BidListDto { BidListId = 1 }); // Simulate an existing BidList entry with the specified ID in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             var updatedBidList = new BidListDto { BidListId = 2, Account = "UpdatedAccount", BidType = "UpdatedType", BidQuantity = 200 };
 
@@ -429,19 +366,9 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IBidListRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new BidListDto { BidListId = 1 });
-            repo
-                .DeleteAsync(1)
-                .Returns(true);
-            var controller = new BidListController(repo);
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new BidListDto { BidListId = 1 }); // Simulate an existing BidList entry with the specified ID in the repository
+            repo.DeleteAsync(1).Returns(true); // Simulate deleting an existing BidList entry from the repository successfully
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             IActionResult result;
@@ -467,17 +394,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IBidListRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns((BidListDto?)null);
-            var controller = new BidListController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns((BidListDto?)null); // Simulate no existing BidList entry with the specified ID in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             IActionResult result;

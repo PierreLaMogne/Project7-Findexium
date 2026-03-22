@@ -9,6 +9,29 @@ namespace FindexiumAPI.Tests.Controllers
 {
     public class RuleNameControllerTests
     {
+        // Helper method to create a controller with a specific user role
+        private RuleNameController CreateControllerWithRole(string? role, IRuleNameRepository? repo = null)
+        {
+            repo ??= Substitute.For<IRuleNameRepository>();
+            var controller = new RuleNameController(repo);
+
+            switch (role)
+            {
+                case "Admin":
+                    controller.InitializeAdminUser();
+                    break;
+                case "User":
+                    controller.InitializeRegularUser();
+                    break;
+                default:
+                    controller.InitializeUnauthenticatedUser();
+                    break;
+            }
+
+            return controller;
+        }
+
+
         // Tests for GetRuleNames
         [Theory]
         [InlineData("Admin")]
@@ -18,17 +41,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRuleNameRepository>();
-            repo
-                .GetAllAsync()
-                .Returns(new List<RuleNameDto> { new RuleNameDto { Id = 1 }, new RuleNameDto { Id = 2 } });
-            var controller = new RuleNameController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetAllAsync().Returns(new List<RuleNameDto> { new RuleNameDto { Id = 1 }, new RuleNameDto { Id = 2 } }); // Mocking the repository to return a list of RuleNameDto
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<IEnumerable<RuleNameDto>> result;
@@ -40,15 +54,15 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetRuleNames();
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" || role == "User")
             {
                 var okResult = Assert.IsType<OkObjectResult>(result.Result);
                 var ruleNames = Assert.IsAssignableFrom<IEnumerable<RuleNameDto>>(okResult.Value);
                 Assert.Equal(2, ruleNames.Count());
             }
-        }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);
+            }
 
         [Theory]
         [InlineData("Admin")]
@@ -58,17 +72,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRuleNameRepository>();
-            repo
-                .GetAllAsync()
-                .Returns(new List<RuleNameDto>());
-            var controller = new RuleNameController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetAllAsync().Returns(new List<RuleNameDto>()); // Mocking the repository to return an empty list of RuleNameDto
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<IEnumerable<RuleNameDto>> result;
@@ -80,13 +85,13 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetRuleNames();
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" ||role == "User")
             {
                 var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
                 Assert.Equal("No RuleName found.", notFoundResult.Value);
             }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
         // Tests for GetRuleName
@@ -98,17 +103,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRuleNameRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new RuleNameDto { Id = 1 });
-            var controller = new RuleNameController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new RuleNameDto { Id = 1 }); // Mocking the repository to return a RuleNameDto for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<RuleNameDto> result;
@@ -120,15 +116,14 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetRuleName(1);
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" ||role == "User")
             {
                 var okResult = Assert.IsType<OkObjectResult>(result.Result);
                 var ruleName = Assert.IsAssignableFrom<RuleNameDto>(okResult.Value);
                 Assert.Equal(1, ruleName.Id);
-
             }
+            else 
+                Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
         [Theory]
@@ -139,17 +134,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRuleNameRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns((RuleNameDto?)null);
-            var controller = new RuleNameController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns((RuleNameDto?)null); // Mocking the repository to return null for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<RuleNameDto> result;
@@ -161,13 +147,13 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetRuleName(1);
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" || role== "User")
             {
                 var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
                 Assert.Equal("The Id mentioned does not exist.", notFoundResult.Value);
             }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
         // Tests for PostRuleName
@@ -179,22 +165,13 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRuleNameRepository>();
-            repo
-                .AddAsync(Arg.Any<RuleNameDto>())
-                .Returns(callInfo =>
+            repo.AddAsync(Arg.Any<RuleNameDto>()).Returns(callInfo =>
                 {
                     var dto = callInfo.Arg<RuleNameDto>();
                     dto.Id = 1;
                     return dto;
-                });
-            var controller = new RuleNameController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+                }); // Mocking the repository to return the created RuleNameDto with an assigned ID
+            var controller = CreateControllerWithRole(role, repo);
 
             var newRuleName = new RuleNameDto { Id = 1, Name = "Rule1", Description = "Description1", Json = "{}", Template = "Template1", SqlStr = "SELECT * FROM Table1", SqlPart = "WHERE Condition1" };
 
@@ -232,14 +209,7 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRuleNameRepository>();
-            var controller = new RuleNameController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            var controller = CreateControllerWithRole(role, repo);
 
             var invalidRuleName = new RuleNameDto { Name = "", Description = "", Json = "{}", Template = "", SqlStr = "", SqlPart = "" };
 
@@ -274,20 +244,9 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRuleNameRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new RuleNameDto { Id = 1 });
-            repo
-                .UpdateAsync(1, Arg.Any<RuleNameDto>())
-                .Returns(true);
-            var controller = new RuleNameController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new RuleNameDto { Id = 1 }); // Mocking the repository to return a RuleNameDto for the specified ID
+            repo.UpdateAsync(1, Arg.Any<RuleNameDto>()).Returns(true); // Mocking the repository to return true for a successful update operation
+            var controller = CreateControllerWithRole(role, repo);
 
             var updatedRuleName = new RuleNameDto { Id = 1, Name = "Rule2", Description = "Description2", Json = "{}", Template = "Template2", SqlStr = "SELECT * FROM Table2", SqlPart = "WHERE Condition2" };
 
@@ -315,16 +274,9 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRuleNameRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns((RuleNameDto?)null);
-            var controller = new RuleNameController(repo);
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns((RuleNameDto?)null); // Mocking the repository to return null for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
+
             var updatedRuleName = new RuleNameDto { Id = 1, Name = "Rule2", Description = "Description2", Json = "{}", Template = "Template2", SqlStr = "SELECT * FROM Table2", SqlPart = "WHERE Condition2" };
             // Act
             IActionResult result;
@@ -353,17 +305,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRuleNameRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new RuleNameDto { Id = 1 });
-            var controller = new RuleNameController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new RuleNameDto { Id = 1 }); // Mocking the repository to return a RuleNameDto for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
 
             var invalidRuleName = new RuleNameDto { Id = 1, Name = "Rule2", Description = "Description2", Json = "{}", Template = "Template2", SqlStr = "SELECT * FROM Table2", SqlPart = "WHERE Condition2" };
 
@@ -397,17 +340,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRuleNameRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new RuleNameDto { Id = 1 });
-            var controller = new RuleNameController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new RuleNameDto { Id = 1 }); // Mocking the repository to return a RuleNameDto for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
 
             var updatedRuleName = new RuleNameDto { Id = 2, Name = "Rule1", Description = "Description1", Json = "{}", Template = "Template1", SqlStr = "SELECT * FROM Table1", SqlPart = "WHERE Condition1" };
 
@@ -436,19 +370,9 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRuleNameRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new RuleNameDto { Id = 1 });
-            repo
-                .DeleteAsync(1)
-                .Returns(true);
-            var controller = new RuleNameController(repo);
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new RuleNameDto { Id = 1 }); // Mocking the repository to return a RuleNameDto for the specified ID
+            repo.DeleteAsync(1).Returns(true); // Mocking the repository to return true for a successful delete operation
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             IActionResult result;
@@ -474,17 +398,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRuleNameRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns((RuleNameDto?)null);
-            var controller = new RuleNameController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns((RuleNameDto?)null); // Mocking the repository to return null for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             IActionResult result;

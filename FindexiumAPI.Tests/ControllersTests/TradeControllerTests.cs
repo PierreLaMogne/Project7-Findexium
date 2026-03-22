@@ -9,6 +9,29 @@ namespace FindexiumAPI.Tests.Controllers
 {
     public class TradeControllerTests
     {
+        // Helper method to create a controller with a specific user role
+        private TradeController CreateControllerWithRole(string? role, ITradeRepository? repo = null)
+        {
+            repo ??= Substitute.For<ITradeRepository>();
+            var controller = new TradeController(repo);
+
+            switch (role)
+            {
+                case "Admin":
+                    controller.InitializeAdminUser();
+                    break;
+                case "User":
+                    controller.InitializeRegularUser();
+                    break;
+                default:
+                    controller.InitializeUnauthenticatedUser();
+                    break;
+            }
+
+            return controller;
+        }
+
+
         // Tests for GetTrades
         [Theory]
         [InlineData("Admin")]
@@ -18,17 +41,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<ITradeRepository>();
-            repo
-                .GetAllAsync()
-                .Returns(new List<TradeDto> { new TradeDto { TradeId = 1 }, new TradeDto { TradeId = 2 } });
-            var controller = new TradeController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetAllAsync().Returns(new List<TradeDto> { new TradeDto { TradeId = 1 }, new TradeDto { TradeId = 2 } }); // Mocking the repository to return a list of trades
+            var controller = CreateControllerWithRole (role, repo);
 
             // Act
             ActionResult<IEnumerable<TradeDto>> result;
@@ -40,14 +54,14 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetTrades();
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" || role == "User")
             {
                 var okResult = Assert.IsType<OkObjectResult>(result.Result);
                 var trades = Assert.IsAssignableFrom<IEnumerable<TradeDto>>(okResult.Value);
                 Assert.Equal(2, trades.Count());
             }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);    
         }
 
         [Theory]
@@ -58,17 +72,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<ITradeRepository>();
-            repo
-                .GetAllAsync()
-                .Returns(new List<TradeDto>());
-            var controller = new TradeController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetAllAsync().Returns(new List<TradeDto>()); // Mocking the repository to return an empty list of trades
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<IEnumerable<TradeDto>> result;
@@ -80,13 +85,13 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetTrades();
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" || role == "User")
             {
                 var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
                 Assert.Equal("No Trade found.", notFoundResult.Value);
             }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
         // Tests for GetTrade
@@ -98,17 +103,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<ITradeRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new TradeDto { TradeId = 1 });
-            var controller = new TradeController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new TradeDto { TradeId = 1 }); // Mocking the repository to return a trade for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<TradeDto> result;
@@ -120,15 +116,14 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetTrade(1);
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" ||role == "User")
             {
                 var okResult = Assert.IsType<OkObjectResult>(result.Result);
                 var trade = Assert.IsAssignableFrom<TradeDto>(okResult.Value);
                 Assert.Equal(1, trade.TradeId);
-
             }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
         [Theory]
@@ -139,17 +134,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<ITradeRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns((TradeDto?)null);
-            var controller = new TradeController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns((TradeDto?)null); // Mocking the repository to return null for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<TradeDto> result;
@@ -161,13 +147,13 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetTrade(1);
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" ||role == "User")
             {
                 var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
                 Assert.Equal("The Id mentioned does not exist.", notFoundResult.Value);
             }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
         // Tests for PostTrade
@@ -179,22 +165,13 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<ITradeRepository>();
-            repo
-                .AddAsync(Arg.Any<TradeDto>())
-                .Returns(callInfo =>
+            repo.AddAsync(Arg.Any<TradeDto>()).Returns(callInfo =>
                 {
                     var dto = callInfo.Arg<TradeDto>();
                     dto.TradeId = 1;
                     return dto;
-                });
-            var controller = new TradeController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+                }); // Mocking the repository to return the created trade with an assigned ID
+            var controller = CreateControllerWithRole(role, repo);
 
             var newTrade = new TradeDto { TradeId = 1, Account = "Account1", AccountType = "Type1", BuyQuantity = 100, SellQuantity = 50, BuyPrice = 10.5, SellPrice = 20.5, TradeDate = DateTime.Now, TradeSecurity = "Security1", TradeStatus = "Status1", Trader = "Trader1", Benchmark = "Benchmark1", Book = "Book1", CreationName = "Creator1", CreationDate = DateTime.Now, RevisionName = "Reviser1", RevisionDate = DateTime.Now, DealName = "Deal1", DealType = "TypeA", SourceListId = "Source1", Side = "Buy" };
 
@@ -243,14 +220,7 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<ITradeRepository>();
-            var controller = new TradeController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            var controller = CreateControllerWithRole(role, repo);
 
             var invalidTrade = new TradeDto { Account = "", AccountType = "", BuyQuantity = null, SellQuantity = null, BuyPrice = null, SellPrice = null, TradeDate = DateTime.Now, TradeSecurity = "", TradeStatus = "", Trader = "", Benchmark = "", Book = "", CreationName = "", CreationDate = DateTime.Now, RevisionName = "", RevisionDate = DateTime.Now, DealName = "", DealType = "", SourceListId = "", Side = "" };
 
@@ -297,20 +267,9 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<ITradeRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new TradeDto { TradeId = 1 });
-            repo
-                .UpdateAsync(1, Arg.Any<TradeDto>())
-                .Returns(true);
-            var controller = new TradeController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new TradeDto { TradeId = 1 }); // Mocking the repository to return a trade for the specified ID
+            repo.UpdateAsync(1, Arg.Any<TradeDto>()).Returns(true); // Mocking the repository to return true for successful update
+            var controller = CreateControllerWithRole(role, repo);
 
             var updatedTrade = new TradeDto { TradeId = 1, Account = "Account2", AccountType = "Type2", BuyQuantity = 200, SellQuantity = 150, BuyPrice = 15.5, SellPrice = 25.5, TradeDate = DateTime.Now, TradeSecurity = "Security2", TradeStatus = "Status2", Trader = "Trader2", Benchmark = "Benchmark2", Book = "Book2", CreationName = "Creator2", CreationDate = DateTime.Now, RevisionName = "Reviser2", RevisionDate = DateTime.Now, DealName = "Deal2", DealType = "TypeB", SourceListId = "Source2", Side = "Sell" };
 
@@ -338,17 +297,11 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<ITradeRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns((TradeDto?)null);
-            var controller = new TradeController(repo);
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns((TradeDto?)null); // Mocking the repository to return null for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
+
             var updatedTrade = new TradeDto { TradeId = 1, Account = "Account2", AccountType = "Type2", BuyQuantity = 200, SellQuantity = 150, BuyPrice = 15.5, SellPrice = 25.5, TradeDate = DateTime.Now, TradeSecurity = "Security2", TradeStatus = "Status2", Trader = "Trader2", Benchmark = "Benchmark2", Book = "Book2", CreationName = "Creator2", CreationDate = DateTime.Now, RevisionName = "Reviser2", RevisionDate = DateTime.Now, DealName = "Deal2", DealType = "TypeB", SourceListId = "Source2", Side = "Sell" };
+            
             // Act
             IActionResult result;
 
@@ -376,17 +329,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<ITradeRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new TradeDto { TradeId = 1 });
-            var controller = new TradeController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new TradeDto { TradeId = 1 }); // Mocking the repository to return a trade for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
 
             var invalidTrade = new TradeDto { TradeId = 1, Account = "Account2", AccountType = "Type2", BuyQuantity = 200, SellQuantity = 150, BuyPrice = 15.5, SellPrice = 25.5, TradeDate = DateTime.Now, TradeSecurity = "Security2", TradeStatus = "Status2", Trader = "Trader2", Benchmark = "Benchmark2", Book = "Book2", CreationName = "Creator2", CreationDate = DateTime.Now, RevisionName = "Reviser2", RevisionDate = DateTime.Now, DealName = "Deal2", DealType = "TypeB", SourceListId = "Source2", Side = "Sell" };
 
@@ -432,17 +376,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<ITradeRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new TradeDto { TradeId = 1 });
-            var controller = new TradeController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new TradeDto { TradeId = 1 }); // Mocking the repository to return a trade for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
 
             var updatedTrade = new TradeDto { TradeId = 2, Account = "Account2", AccountType = "Type2", BuyQuantity = 200, SellQuantity = 150, BuyPrice = 15.5, SellPrice = 25.5, TradeDate = DateTime.Now, TradeSecurity = "Security2", TradeStatus = "Status2", Trader = "Trader2", Benchmark = "Benchmark2", Book = "Book2", CreationName = "Creator2", CreationDate = DateTime.Now, RevisionName = "Reviser2", RevisionDate = DateTime.Now, DealName = "Deal2", DealType = "TypeB", SourceListId = "Source2", Side = "Sell" };
 
@@ -471,19 +406,9 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<ITradeRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new TradeDto { TradeId = 1 });
-            repo
-                .DeleteAsync(1)
-                .Returns(true);
-            var controller = new TradeController(repo);
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new TradeDto { TradeId = 1 }); // Mocking the repository to return a trade for the specified ID
+            repo.DeleteAsync(1).Returns(true); // Mocking the repository to return true for successful deletion
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             IActionResult result;
@@ -509,17 +434,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<ITradeRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns((TradeDto?)null);
-            var controller = new TradeController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns((TradeDto?)null); // Mocking the repository to return null for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             IActionResult result;

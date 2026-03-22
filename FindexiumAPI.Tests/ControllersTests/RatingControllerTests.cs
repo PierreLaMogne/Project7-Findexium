@@ -9,6 +9,29 @@ namespace FindexiumAPI.Tests.Controllers
 {
     public class RatingControllerTests
     {
+        // Helper method to create a controller with a specific user role
+        private RatingController CreateControllerWithRole(string? role, IRatingRepository? repo = null)
+        {
+            repo ??= Substitute.For<IRatingRepository>();
+            var controller = new RatingController(repo);
+
+            switch (role)
+            {
+                case "Admin":
+                    controller.InitializeAdminUser();
+                    break;
+                case "User":
+                    controller.InitializeRegularUser();
+                    break;
+                default:
+                    controller.InitializeUnauthenticatedUser();
+                    break;
+            }
+
+            return controller;
+        }
+
+
         // Tests for GetRatings
         [Theory]
         [InlineData("Admin")]
@@ -18,17 +41,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRatingRepository>();
-            repo
-                .GetAllAsync()
-                .Returns(new List<RatingDto> { new RatingDto { Id = 1 }, new RatingDto { Id = 2 } });
-            var controller = new RatingController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetAllAsync().Returns(new List<RatingDto> { new RatingDto { Id = 1 }, new RatingDto { Id = 2 } }); // Simulate existing ratings in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<IEnumerable<RatingDto>> result;
@@ -40,14 +54,14 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetRatings();
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" || role == "User")
             {
                 var okResult = Assert.IsType<OkObjectResult>(result.Result);
                 var ratings = Assert.IsAssignableFrom<IEnumerable<RatingDto>>(okResult.Value);
                 Assert.Equal(2, ratings.Count());
             }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
         [Theory]
@@ -58,17 +72,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRatingRepository>();
-            repo
-                .GetAllAsync()
-                .Returns(new List<RatingDto>());
-            var controller = new RatingController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetAllAsync().Returns(new List<RatingDto>()); // Simulate no ratings in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<IEnumerable<RatingDto>> result;
@@ -80,13 +85,13 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetRatings();
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" || role == "User")
             {
                 var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
                 Assert.Equal("No Rating found.", notFoundResult.Value);
             }
+            else 
+                Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
         // Tests for GetRating
@@ -98,17 +103,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRatingRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new RatingDto { Id = 1 });
-            var controller = new RatingController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new RatingDto { Id = 1 }); // Simulate existing rating in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<RatingDto> result;
@@ -120,15 +116,14 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetRating(1);
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" || role == "User")
             {
                 var okResult = Assert.IsType<OkObjectResult>(result.Result);
                 var rating = Assert.IsAssignableFrom<RatingDto>(okResult.Value);
                 Assert.Equal(1, rating.Id);
-
             }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
         [Theory]
@@ -139,17 +134,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRatingRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns((RatingDto?)null);
-            var controller = new RatingController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns((RatingDto?)null); // Simulate no rating with the specified ID in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             ActionResult<RatingDto> result;
@@ -161,13 +147,13 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetRating(1);
 
             // Assert
-            if (role == "Unauthenticated")
-                Assert.IsType<UnauthorizedResult>(result.Result);
-            else
+            if (role == "Admin" || role == "User")
             {
                 var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
                 Assert.Equal("The Id mentioned does not exist.", notFoundResult.Value);
-            }
+            } 
+            else 
+                Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
         // Tests for PostRating
@@ -179,22 +165,13 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRatingRepository>();
-            repo
-                .AddAsync(Arg.Any<RatingDto>())
-                .Returns(callInfo =>
+            repo.AddAsync(Arg.Any<RatingDto>()).Returns(callInfo =>
                 {
                     var dto = callInfo.Arg<RatingDto>();
                     dto.Id = 1;
                     return dto;
-                });
-            var controller = new RatingController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+                }); // Simulate adding a new rating to the repository and returning the created rating with an assigned ID
+            var controller = CreateControllerWithRole(role, repo);
 
             var newRating = new RatingDto { Id = 1, MoodysRating = "Aaa", SandPRating = "AAA", FitchRating = "AAA", OrderNumber = 1 };
 
@@ -230,14 +207,7 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRatingRepository>();
-            var controller = new RatingController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            var controller = CreateControllerWithRole(role, repo);
 
             var invalidRating = new RatingDto { MoodysRating = "", SandPRating = "", FitchRating = "", OrderNumber = null };
 
@@ -271,20 +241,9 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRatingRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new RatingDto { Id = 1 });
-            repo
-                .UpdateAsync(1, Arg.Any<RatingDto>())
-                .Returns(true);
-            var controller = new RatingController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new RatingDto { Id = 1 }); // Simulate existing rating in the repository
+            repo.UpdateAsync(1, Arg.Any<RatingDto>()).Returns(true); // Simulate successful update of the rating in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             var updatedRating = new RatingDto { Id = 1, MoodysRating = "Bbb", SandPRating = "BBB", FitchRating = "BBB", OrderNumber = 2 };
 
@@ -312,17 +271,11 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRatingRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns((RatingDto?)null);
-            var controller = new RatingController(repo);
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns((RatingDto?)null); // Simulate no rating with the specified ID in the repository
+            var controller = CreateControllerWithRole(role, repo);
+
             var updatedRating = new RatingDto { Id = 1, MoodysRating = "Bbb", SandPRating = "BBB", FitchRating = "BBB", OrderNumber = 2 };
+
             // Act
             IActionResult result;
 
@@ -350,17 +303,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRatingRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new RatingDto { Id = 1 });
-            var controller = new RatingController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new RatingDto { Id = 1 }); // Simulate existing rating in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             var invalidRating = new RatingDto { Id = 1, MoodysRating = "Bbb", SandPRating = "BBB", FitchRating = "BBB", OrderNumber = 2 };
 
@@ -392,17 +336,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRatingRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new RatingDto { Id = 1 });
-            var controller = new RatingController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new RatingDto { Id = 1 }); // Simulate existing rating in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             var updatedRating = new RatingDto { Id = 2, MoodysRating = "Bbb", SandPRating = "BBB", FitchRating = "BBB", OrderNumber = 2 };
 
@@ -431,19 +366,9 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRatingRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns(new RatingDto { Id = 1 });
-            repo
-                .DeleteAsync(1)
-                .Returns(true);
-            var controller = new RatingController(repo);
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns(new RatingDto { Id = 1 }); // Simulate existing rating in the repository
+            repo.DeleteAsync(1).Returns(true); // Simulate successful deletion of the rating in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             IActionResult result;
@@ -469,17 +394,8 @@ namespace FindexiumAPI.Tests.Controllers
         {
             // Arrange
             var repo = Substitute.For<IRatingRepository>();
-            repo
-                .GetByIdAsync(1)
-                .Returns((RatingDto?)null);
-            var controller = new RatingController(repo);
-
-            if (role == "Admin")
-                controller.InitializeAdminUser();
-            else if (role == "User")
-                controller.InitializeRegularUser();
-            else if (role == "Unauthenticated")
-                controller.InitializeUnauthenticatedUser();
+            repo.GetByIdAsync(1).Returns((RatingDto?)null); // Simulate no rating with the specified ID in the repository
+            var controller = CreateControllerWithRole(role, repo);
 
             // Act
             IActionResult result;
