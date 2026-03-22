@@ -1,4 +1,5 @@
 ﻿using FindexiumAPI.Domain;
+using FindexiumAPI.Models;
 
 namespace FindexiumAPI.Tests.TestData
 {
@@ -28,6 +29,12 @@ namespace FindexiumAPI.Tests.TestData
                 }
             };
 
+        }
+
+        public static IEnumerable<object[]> GetBidListDtosForCreate()
+        {
+            yield return new object[] { new BidListDto { Account = "Account1", BidType = "Type1", BidQuantity = 123 } };
+            yield return new object[] { new BidListDto { Account = "Account2", BidType = "Type2", BidQuantity = 456 } };
         }
     }
 }

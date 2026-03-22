@@ -3,26 +3,40 @@ using FindexiumAPI.Domain;
 using FindexiumAPI.Models;
 using FindexiumAPI.Repositories;
 using FindexiumAPI.Tests.TestData;
+using FindexiumAPI.Tests.TestUtilities;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace FindexiumAPI.Tests.RepositoriesTests
-{
-    public class CurvePointRepositoryTests : IDisposable
+{ 
+    public class CurvePointRepositoryTests : IClassFixture<LocalDbFixture>, IDisposable
     {
-        private LocalDbContext _context;
+        private readonly LocalDbFixture _fixture;
         private readonly ICurvePointRepository _repository;
 
-        public CurvePointRepositoryTests()
+        // The constructor initializes the repository with the in-memory database context provided by the fixture.
+        // It also ensures that the database is cleared before each test run to maintain test isolation.
+        public CurvePointRepositoryTests(LocalDbFixture fixture)
         {
-            // Create a new in-memory database for each test
-            var options = new DbContextOptionsBuilder<LocalDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-                .Options;
+            _fixture = fixture;
+            _repository = new CurvePointRepository(_fixture.Context);
+            ClearDatabase();
+        }
 
-            _context = new LocalDbContext(options);
-            _repository = new CurvePointRepository(_context);
+        private void ClearDatabase()
+        {
+            _fixture.Context.CurvePoints.RemoveRange(_fixture.Context.CurvePoints);
+            _fixture.Context.SaveChanges();
+        }
+
+        // The SeedAsync method is a helper function that populates the in-memory database with test data before each test case.
+        // It first clears the database to ensure a clean state, then adds the provided list of CurvePoint entities and saves the changes.
+        private async Task SeedAsync(List<CurvePoint> data)
+        {
+            ClearDatabase();
+            await _fixture.Context.CurvePoints.AddRangeAsync(data);
+            await _fixture.Context.SaveChangesAsync();
         }
 
 
@@ -31,117 +45,77 @@ namespace FindexiumAPI.Tests.RepositoriesTests
         [MemberData(nameof(CurvePointTestData.GetCurvePointsScenarios), MemberType = typeof(CurvePointTestData))]
         public async Task GetAllAsync_ShouldReturnExpectedDtos(List<CurvePoint> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.CurvePoints.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            // Act
+            await SeedAsync(testData);
             var result = await _repository.GetAllAsync();
 
-            // Assert
-            result.Should().NotBeNull();
             result.Should().HaveCount(testData.Count);
-            result.Should().BeEquivalentTo(
-                testData,
-                options => options
-                    .ExcludingMissingMembers()
-            );
+            if (testData.Count > 0)
+            {
+                result.Should().BeEquivalentTo(
+                    testData,
+                    options => options.ExcludingMissingMembers()
+                );
+            }
+            else
+                result.Should().BeEmpty();
         }
 
-
-        // Testing GetByIdAsync
+        // Testing GetByIdAsync - Existing
         [Theory]
         [MemberData(nameof(CurvePointTestData.GetCurvePointsScenarios), MemberType = typeof(CurvePointTestData))]
         public async Task GetByIdAsync_ShouldReturnExpectedDto(List<CurvePoint> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.CurvePoints.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedAsync(testData);
 
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
-
-            // Act & Assert
-            foreach (var curvePoint in testData)
+            foreach (var curvePoint in testData.Where(b => b.Id > 0))
             {
                 var result = await _repository.GetByIdAsync(curvePoint.Id);
                 result.Should().NotBeNull();
                 result.Should().BeEquivalentTo(
                     curvePoint,
-                    options => options
-                        .ExcludingMissingMembers()
+                    options => options.ExcludingMissingMembers()
                 );
             }
-
         }
 
-        [Theory]
-        [MemberData(nameof(CurvePointTestData.GetCurvePointsScenarios), MemberType = typeof(CurvePointTestData))]
-        public async Task GetByIdAsync_ShouldReturnNull_WhenNotFound(List<CurvePoint> testData)
+        [Fact]
+        public async Task GetByIdAsync_ShouldReturnNull_WhenNotFound()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.CurvePoints.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            // Act
-            var result = await _repository.GetByIdAsync(-1); // Use an ID that doesn't exist
-
-            // Assert
+            await SeedAsync(new List<CurvePoint>());
+            var result = await _repository.GetByIdAsync(-1);
             result.Should().BeNull();
         }
 
-
         // Testing CreateAsync
-        [Fact]
-        public async Task CreateAsync_ShouldAddNewCurvePoint()
+        [Theory]
+        [MemberData(nameof(CurvePointTestData.GetCurvePointDtosForCreate), MemberType = typeof(CurvePointTestData))]
+        public async Task CreateAsync_ShouldAddNewCurvePoint(CurvePointDto testDto)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
+            await SeedAsync(new List<CurvePoint>());
 
-            var testDto = new CurvePointDto
-            {
-                CurveId = 10,
-                Term = 1.0,
-                CurvePointValue = 100.0
-            };
-
-            // Act
             var createdCurvePoint = await _repository.AddAsync(testDto);
 
-            // Assert
             createdCurvePoint.Should().NotBeNull();
             createdCurvePoint.Id.Should().BePositive();
             createdCurvePoint.Should().BeEquivalentTo(testDto, options => options
-             .Excluding(b => b.Id)
-             .ExcludingMissingMembers()
+                .Excluding(b => b.Id)
+                .ExcludingMissingMembers()
             );
 
-            var dbCount = await _context.CurvePoints.CountAsync();
+            var dbCount = await _fixture.Context.CurvePoints.CountAsync();
             dbCount.Should().Be(1);
         }
-
 
         // Testing UpdateAsync
         [Theory]
         [MemberData(nameof(CurvePointTestData.GetCurvePointsScenarios), MemberType = typeof(CurvePointTestData))]
         public async Task UpdateAsync_ShouldModifyExistingCurvePoint(List<CurvePoint> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.CurvePoints.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedAsync(testData);
+            var existingCurvePoint = testData.FirstOrDefault(b => b.Id > 0);
 
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
+            if (existingCurvePoint == null) return;
 
-            var existingCurvePoint = testData.First();
             var updateDto = new CurvePointDto
             {
                 CurveId = 20,
@@ -149,28 +123,21 @@ namespace FindexiumAPI.Tests.RepositoriesTests
                 CurvePointValue = 200.0
             };
 
-            // Act
             var result = await _repository.UpdateAsync(existingCurvePoint.Id, updateDto);
+            result.Should().BeTrue();
 
-            // Assert
-            result.Should().Be(true);
-            var updatedCurvePoint = await _context.CurvePoints.FindAsync(existingCurvePoint.Id);
+            var updatedCurvePoint = await _fixture.Context.CurvePoints.FindAsync(existingCurvePoint.Id);
             updatedCurvePoint.Should().NotBeNull();
             updatedCurvePoint.Should().BeEquivalentTo(updateDto, options => options
-             .Excluding(b => b.Id)
-             .ExcludingMissingMembers()
+                .Excluding(b => b.Id)
+                .ExcludingMissingMembers()
             );
         }
 
-        [Theory]
-        [MemberData(nameof(CurvePointTestData.GetCurvePointsScenarios), MemberType = typeof(CurvePointTestData))]
-        public async Task UpdateAsync_ShouldReturnFalse_WhenNotFound(List<CurvePoint> testData)
+        [Fact]
+        public async Task UpdateAsync_ShouldReturnFalse_WhenNotFound()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.CurvePoints.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
+            await SeedAsync(new List<CurvePoint>());
             var updateDto = new CurvePointDto
             {
                 CurveId = 20,
@@ -178,59 +145,38 @@ namespace FindexiumAPI.Tests.RepositoriesTests
                 CurvePointValue = 200.0
             };
 
-            // Act
-            var result = await _repository.UpdateAsync(-1, updateDto); // Use an ID that doesn't exist
-
-            // Assert
-            result.Should().Be(false);
+            var result = await _repository.UpdateAsync(-1, updateDto);
+            result.Should().BeFalse();
         }
-
 
         // Testing DeleteAsync
         [Theory]
         [MemberData(nameof(CurvePointTestData.GetCurvePointsScenarios), MemberType = typeof(CurvePointTestData))]
         public async Task DeleteAsync_ShouldRemoveCurvePoint(List<CurvePoint> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.CurvePoints.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedAsync(testData);
+            var existingCurvePoint = testData.FirstOrDefault(b => b.Id > 0);
 
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
+            if (existingCurvePoint == null) return;
 
-            var existingCurvePoint = testData.First();
-
-            // Act
             var result = await _repository.DeleteAsync(existingCurvePoint.Id);
+            result.Should().BeTrue();
 
-            // Assert
-            result.Should().Be(true);
-            var deletedCurvePoint = await _context.CurvePoints.FindAsync(existingCurvePoint.Id);
+            var deletedCurvePoint = await _fixture.Context.CurvePoints.FindAsync(existingCurvePoint.Id);
             deletedCurvePoint.Should().BeNull();
         }
 
-        [Theory]
-        [MemberData(nameof(CurvePointTestData.GetCurvePointsScenarios), MemberType = typeof(CurvePointTestData))]
-        public async Task DeleteAsync_ShouldReturnFalse_WhenNotFound(List<CurvePoint> testData)
+        [Fact]
+        public async Task DeleteAsync_ShouldReturnFalse_WhenNotFound()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.CurvePoints.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            // Act
-            var result = await _repository.DeleteAsync(-1); // Use an ID that doesn't exist
-
-            // Assert
-            result.Should().Be(false);
+            await SeedAsync(new List<CurvePoint>());
+            var result = await _repository.DeleteAsync(-1);
+            result.Should().BeFalse();
         }
 
         public void Dispose()
         {
-            _context?.Dispose();
+            ClearDatabase();
         }
     }
 }

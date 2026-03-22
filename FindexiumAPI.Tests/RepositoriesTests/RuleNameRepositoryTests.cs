@@ -3,26 +3,41 @@ using FindexiumAPI.Domain;
 using FindexiumAPI.Models;
 using FindexiumAPI.Repositories;
 using FindexiumAPI.Tests.TestData;
+using FindexiumAPI.Tests.TestUtilities;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace FindexiumAPI.Tests.RepositoriesTests
 {
-    public class RuleNameRepositoryTests : IDisposable
+
+    public class RuleNameRepositoryTests : IClassFixture<LocalDbFixture>, IDisposable
     {
-        private LocalDbContext _context;
+        private readonly LocalDbFixture _fixture;
         private readonly IRuleNameRepository _repository;
 
-        public RuleNameRepositoryTests()
+        // The constructor initializes the repository with the in-memory database context provided by the fixture.
+        // It also ensures that the database is cleared before each test run to maintain test isolation.
+        public RuleNameRepositoryTests(LocalDbFixture fixture)
         {
-            // Create a new in-memory database for each test
-            var options = new DbContextOptionsBuilder<LocalDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-                .Options;
+            _fixture = fixture;
+            _repository = new RuleNameRepository(_fixture.Context);
+            ClearDatabase();
+        }
 
-            _context = new LocalDbContext(options);
-            _repository = new RuleNameRepository(_context);
+        private void ClearDatabase()
+        {
+            _fixture.Context.RuleNames.RemoveRange(_fixture.Context.RuleNames);
+            _fixture.Context.SaveChanges();
+        }
+
+        // The SeedAsync method is a helper function that populates the in-memory database with test data before each test case.
+        // It first clears the database to ensure a clean state, then adds the provided list of RuleName entities and saves the changes.
+        private async Task SeedAsync(List<RuleName> data)
+        {
+            ClearDatabase();
+            await _fixture.Context.RuleNames.AddRangeAsync(data);
+            await _fixture.Context.SaveChangesAsync();
         }
 
 
@@ -31,215 +46,144 @@ namespace FindexiumAPI.Tests.RepositoriesTests
         [MemberData(nameof(RuleNameTestData.GetRuleNamesScenarios), MemberType = typeof(RuleNameTestData))]
         public async Task GetAllAsync_ShouldReturnExpectedDtos(List<RuleName> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.RuleNames.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            // Act
+            await SeedAsync(testData);
             var result = await _repository.GetAllAsync();
 
-            // Assert
-            result.Should().NotBeNull();
             result.Should().HaveCount(testData.Count);
-            result.Should().BeEquivalentTo(
-                testData,
-                options => options
-                    .ExcludingMissingMembers()
-            );
+            if (testData.Count > 0)
+            {
+                result.Should().BeEquivalentTo(
+                    testData,
+                    options => options.ExcludingMissingMembers()
+                );
+            }
+            else
+                result.Should().BeEmpty();
         }
 
-
-        // Testing GetByIdAsync
+        // Testing GetByIdAsync - Existing
         [Theory]
         [MemberData(nameof(RuleNameTestData.GetRuleNamesScenarios), MemberType = typeof(RuleNameTestData))]
         public async Task GetByIdAsync_ShouldReturnExpectedDto(List<RuleName> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.RuleNames.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedAsync(testData);
 
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
-
-            // Act & Assert
-            foreach (var ruleName in testData)
+            foreach (var ruleName in testData.Where(b => b.Id > 0))
             {
                 var result = await _repository.GetByIdAsync(ruleName.Id);
                 result.Should().NotBeNull();
                 result.Should().BeEquivalentTo(
                     ruleName,
-                    options => options
-                        .ExcludingMissingMembers()
+                    options => options.ExcludingMissingMembers()
                 );
             }
-
         }
 
-        [Theory]
-        [MemberData(nameof(RuleNameTestData.GetRuleNamesScenarios), MemberType = typeof(RuleNameTestData))]
-        public async Task GetByIdAsync_ShouldReturnNull_WhenNotFound(List<RuleName> testData)
+        [Fact]
+        public async Task GetByIdAsync_ShouldReturnNull_WhenNotFound()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.RuleNames.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            // Act
-            var result = await _repository.GetByIdAsync(-1); // Use an ID that doesn't exist
-
-            // Assert
+            await SeedAsync(new List<RuleName>());
+            var result = await _repository.GetByIdAsync(-1);
             result.Should().BeNull();
         }
 
-
         // Testing CreateAsync
-        [Fact]
-        public async Task CreateAsync_ShouldAddNewRuleName()
+        [Theory]
+        [MemberData(nameof(RuleNameTestData.GetRuleNameDtosForCreate), MemberType = typeof(RuleNameTestData))]
+        public async Task CreateAsync_ShouldAddNewRuleName(RuleNameDto testDto)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
+            await SeedAsync(new List<RuleName>());
 
-            var testDto = new RuleNameDto
-            {
-                Name = "Rule1",
-                Description = "Description1",
-                Json = "{}",
-                Template = "Template1",
-                SqlStr = "SELECT * FROM Table1",
-                SqlPart = "WHERE Condition1"
-            };
-
-            // Act
             var createdRuleName = await _repository.AddAsync(testDto);
 
-            // Assert
             createdRuleName.Should().NotBeNull();
             createdRuleName.Id.Should().BePositive();
             createdRuleName.Should().BeEquivalentTo(testDto, options => options
-             .Excluding(b => b.Id)
-             .ExcludingMissingMembers()
+                .Excluding(b => b.Id)
+                .ExcludingMissingMembers()
             );
 
-            var dbCount = await _context.RuleNames.CountAsync();
+            var dbCount = await _fixture.Context.RuleNames.CountAsync();
             dbCount.Should().Be(1);
         }
-
 
         // Testing UpdateAsync
         [Theory]
         [MemberData(nameof(RuleNameTestData.GetRuleNamesScenarios), MemberType = typeof(RuleNameTestData))]
         public async Task UpdateAsync_ShouldModifyExistingRuleName(List<RuleName> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.RuleNames.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedAsync(testData);
+            var existingRuleName = testData.FirstOrDefault(b => b.Id > 0);
 
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
+            if (existingRuleName == null) return;
 
-            var existingRuleName = testData.First();
             var updateDto = new RuleNameDto
             {
-                Name = "Rule10",
-                Description = "Description10",
+                Name = "Rule2",
+                Description = "Description2",
                 Json = "{}",
-                Template = "Template10",
-                SqlStr = "SELECT * FROM Table10",
-                SqlPart = "WHERE Condition10"
+                Template = "Template2",
+                SqlStr = "SELECT * FROM Table2",
+                SqlPart = "WHERE Condition2"
             };
 
-            // Act
             var result = await _repository.UpdateAsync(existingRuleName.Id, updateDto);
+            result.Should().BeTrue();
 
-            // Assert
-            result.Should().Be(true);
-            var updatedRuleName = await _context.RuleNames.FindAsync(existingRuleName.Id);
+            var updatedRuleName = await _fixture.Context.RuleNames.FindAsync(existingRuleName.Id);
             updatedRuleName.Should().NotBeNull();
             updatedRuleName.Should().BeEquivalentTo(updateDto, options => options
-             .Excluding(b => b.Id)
-             .ExcludingMissingMembers()
+                .Excluding(b => b.Id)
+                .ExcludingMissingMembers()
             );
         }
 
-        [Theory]
-        [MemberData(nameof(RuleNameTestData.GetRuleNamesScenarios), MemberType = typeof(RuleNameTestData))]
-        public async Task UpdateAsync_ShouldReturnFalse_WhenNotFound(List<RuleName> testData)
+        [Fact]
+        public async Task UpdateAsync_ShouldReturnFalse_WhenNotFound()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.RuleNames.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
+            await SeedAsync(new List<RuleName>());
             var updateDto = new RuleNameDto
             {
-                Name = "Rule10",
-                Description = "Description10",
+                Name = "Rule2",
+                Description = "Description2",
                 Json = "{}",
-                Template = "Template10",
-                SqlStr = "SELECT * FROM Table10",
-                SqlPart = "WHERE Condition10"
+                Template = "Template2",
+                SqlStr = "SELECT * FROM Table2",
+                SqlPart = "WHERE Condition2"
             };
 
-            // Act
-            var result = await _repository.UpdateAsync(-1, updateDto); // Use an ID that doesn't exist
-
-            // Assert
-            result.Should().Be(false);
+            var result = await _repository.UpdateAsync(-1, updateDto);
+            result.Should().BeFalse();
         }
-
 
         // Testing DeleteAsync
         [Theory]
         [MemberData(nameof(RuleNameTestData.GetRuleNamesScenarios), MemberType = typeof(RuleNameTestData))]
         public async Task DeleteAsync_ShouldRemoveRuleName(List<RuleName> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.RuleNames.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedAsync(testData);
+            var existingRuleName = testData.FirstOrDefault(b => b.Id > 0);
 
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
+            if (existingRuleName == null) return;
 
-            var existingRuleName = testData.First();
-
-            // Act
             var result = await _repository.DeleteAsync(existingRuleName.Id);
+            result.Should().BeTrue();
 
-            // Assert
-            result.Should().Be(true);
-            var deletedRuleName = await _context.RuleNames.FindAsync(existingRuleName.Id);
+            var deletedRuleName = await _fixture.Context.RuleNames.FindAsync(existingRuleName.Id);
             deletedRuleName.Should().BeNull();
         }
 
-        [Theory]
-        [MemberData(nameof(RuleNameTestData.GetRuleNamesScenarios), MemberType = typeof(RuleNameTestData))]
-        public async Task DeleteAsync_ShouldReturnFalse_WhenNotFound(List<RuleName> testData)
+        [Fact]
+        public async Task DeleteAsync_ShouldReturnFalse_WhenNotFound()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.RuleNames.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            // Act
-            var result = await _repository.DeleteAsync(-1); // Use an ID that doesn't exist
-
-            // Assert
-            result.Should().Be(false);
+            await SeedAsync(new List<RuleName>());
+            var result = await _repository.DeleteAsync(-1);
+            result.Should().BeFalse();
         }
 
         public void Dispose()
         {
-            _context?.Dispose();
+            ClearDatabase();
         }
     }
 }

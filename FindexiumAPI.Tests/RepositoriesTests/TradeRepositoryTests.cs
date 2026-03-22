@@ -3,26 +3,40 @@ using FindexiumAPI.Domain;
 using FindexiumAPI.Models;
 using FindexiumAPI.Repositories;
 using FindexiumAPI.Tests.TestData;
+using FindexiumAPI.Tests.TestUtilities;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace FindexiumAPI.Tests.RepositoriesTests
 {
-    public class TradeRepositoryTests : IDisposable
+    public class TradeRepositoryTests : IClassFixture<LocalDbFixture>, IDisposable
     {
-        private LocalDbContext _context;
+        private readonly LocalDbFixture _fixture;
         private readonly ITradeRepository _repository;
 
-        public TradeRepositoryTests()
+        // The constructor initializes the repository with the in-memory database context provided by the fixture.
+        // It also ensures that the database is cleared before each test run to maintain test isolation.
+        public TradeRepositoryTests(LocalDbFixture fixture)
         {
-            // Create a new in-memory database for each test
-            var options = new DbContextOptionsBuilder<LocalDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-                .Options;
+            _fixture = fixture;
+            _repository = new TradeRepository(_fixture.Context);
+            ClearDatabase();
+        }
 
-            _context = new LocalDbContext(options);
-            _repository = new TradeRepository(_context);
+        private void ClearDatabase()
+        {
+            _fixture.Context.Trades.RemoveRange(_fixture.Context.Trades);
+            _fixture.Context.SaveChanges();
+        }
+
+        // The SeedAsync method is a helper function that populates the in-memory database with test data before each test case.
+        // It first clears the database to ensure a clean state, then adds the provided list of Trade entities and saves the changes.
+        private async Task SeedAsync(List<Trade> data)
+        {
+            ClearDatabase();
+            await _fixture.Context.Trades.AddRangeAsync(data);
+            await _fixture.Context.SaveChangesAsync();
         }
 
 
@@ -31,257 +45,172 @@ namespace FindexiumAPI.Tests.RepositoriesTests
         [MemberData(nameof(TradeTestData.GetTradesScenarios), MemberType = typeof(TradeTestData))]
         public async Task GetAllAsync_ShouldReturnExpectedDtos(List<Trade> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Trades.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            // Act
+            await SeedAsync(testData);
             var result = await _repository.GetAllAsync();
 
-            // Assert
-            result.Should().NotBeNull();
             result.Should().HaveCount(testData.Count);
-            result.Should().BeEquivalentTo(
-                testData,
-                options => options
-                    .ExcludingMissingMembers()
-            );
+            if (testData.Count > 0)
+            {
+                result.Should().BeEquivalentTo(
+                    testData,
+                    options => options.ExcludingMissingMembers()
+                );
+            }
+            else
+                result.Should().BeEmpty();
         }
 
-
-        // Testing GetByIdAsync
+        // Testing GetByIdAsync - Existing
         [Theory]
         [MemberData(nameof(TradeTestData.GetTradesScenarios), MemberType = typeof(TradeTestData))]
         public async Task GetByIdAsync_ShouldReturnExpectedDto(List<Trade> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Trades.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedAsync(testData);
 
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
-
-            // Act & Assert
-            foreach (var trade in testData)
+            foreach (var trade in testData.Where(b => b.TradeId > 0))
             {
                 var result = await _repository.GetByIdAsync(trade.TradeId);
                 result.Should().NotBeNull();
                 result.Should().BeEquivalentTo(
                     trade,
-                    options => options
-                        .ExcludingMissingMembers()
+                    options => options.ExcludingMissingMembers()
                 );
             }
-
         }
 
-        [Theory]
-        [MemberData(nameof(TradeTestData.GetTradesScenarios), MemberType = typeof(TradeTestData))]
-        public async Task GetByIdAsync_ShouldReturnNull_WhenNotFound(List<Trade> testData)
+        [Fact]
+        public async Task GetByIdAsync_ShouldReturnNull_WhenNotFound()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Trades.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            // Act
-            var result = await _repository.GetByIdAsync(-1); // Use an ID that doesn't exist
-
-            // Assert
+            await SeedAsync(new List<Trade>());
+            var result = await _repository.GetByIdAsync(-1);
             result.Should().BeNull();
         }
 
-
         // Testing CreateAsync
-        [Fact]
-        public async Task CreateAsync_ShouldAddNewTrade()
+        [Theory]
+        [MemberData(nameof(TradeTestData.GetTradeDtosForCreate), MemberType = typeof(TradeTestData))]
+        public async Task CreateAsync_ShouldAddNewTrade(TradeDto testDto)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
+            await SeedAsync(new List<Trade>());
 
-            var testDto = new TradeDto
-            {
-                Account = "Account1",
-                AccountType = "Type1",
-                BuyQuantity = 100,
-                SellQuantity = 50,
-                BuyPrice = 10.5,
-                SellPrice = 20.5,
-                TradeDate = DateTime.Now,
-                TradeSecurity = "Security1",
-                TradeStatus = "Status1",
-                Trader = "Trader1",
-                Benchmark = "Benchmark1",
-                Book = "Book1",
-                CreationName = "Creator1",
-                CreationDate = DateTime.Now,
-                RevisionName = "Reviser1",
-                RevisionDate = DateTime.Now,
-                DealName = "Deal1",
-                DealType = "TypeA",
-                SourceListId = "Source1",
-                Side = "Buy"
-            };
-
-            // Act
             var createdTrade = await _repository.AddAsync(testDto);
 
-            // Assert
             createdTrade.Should().NotBeNull();
             createdTrade.TradeId.Should().BePositive();
             createdTrade.Should().BeEquivalentTo(testDto, options => options
-             .Excluding(b => b.TradeId)
-             .ExcludingMissingMembers()
+                .Excluding(b => b.TradeId)
+                .ExcludingMissingMembers()
             );
 
-            var dbCount = await _context.Trades.CountAsync();
+            var dbCount = await _fixture.Context.Trades.CountAsync();
             dbCount.Should().Be(1);
         }
-
 
         // Testing UpdateAsync
         [Theory]
         [MemberData(nameof(TradeTestData.GetTradesScenarios), MemberType = typeof(TradeTestData))]
         public async Task UpdateAsync_ShouldModifyExistingTrade(List<Trade> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Trades.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedAsync(testData);
+            var existingTrade = testData.FirstOrDefault(b => b.TradeId > 0);
 
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
+            if (existingTrade == null) return;
 
-            var existingTrade = testData.First();
             var updateDto = new TradeDto
             {
-                Account = "Account3",
-                AccountType = "Type3",
-                BuyQuantity = 300,
-                SellQuantity = 250,
-                BuyPrice = 20.5,
-                SellPrice = 30.5,
+                Account = "Account2",
+                AccountType = "Type2",
+                BuyQuantity = 200,
+                SellQuantity = 150,
+                BuyPrice = 15.5,
+                SellPrice = 25.5,
                 TradeDate = DateTime.Now,
-                TradeSecurity = "Security3",
-                TradeStatus = "Status3",
-                Trader = "Trader3",
-                Benchmark = "Benchmark3",
-                Book = "Book3",
-                CreationName = "Creator3",
+                TradeSecurity = "Security2",
+                TradeStatus = "Status2",
+                Trader = "Trader2",
+                Benchmark = "Benchmark2",
+                Book = "Book2",
+                CreationName = "Creator2",
                 CreationDate = DateTime.Now,
-                RevisionName = "Reviser3",
+                RevisionName = "Reviser2",
                 RevisionDate = DateTime.Now,
-                DealName = "Deal3",
-                DealType = "TypeC",
-                SourceListId = "Source3",
-                Side = "Buy"
+                DealName = "Deal2",
+                DealType = "TypeB",
+                SourceListId = "Source2",
+                Side = "Sell"
             };
 
-            // Act
             var result = await _repository.UpdateAsync(existingTrade.TradeId, updateDto);
+            result.Should().BeTrue();
 
-            // Assert
-            result.Should().Be(true);
-            var updatedTrade = await _context.Trades.FindAsync(existingTrade.TradeId);
+            var updatedTrade = await _fixture.Context.Trades.FindAsync(existingTrade.TradeId);
             updatedTrade.Should().NotBeNull();
             updatedTrade.Should().BeEquivalentTo(updateDto, options => options
-             .Excluding(b => b.TradeId)
-             .ExcludingMissingMembers()
+                .Excluding(b => b.TradeId)
+                .ExcludingMissingMembers()
             );
         }
 
-        [Theory]
-        [MemberData(nameof(TradeTestData.GetTradesScenarios), MemberType = typeof(TradeTestData))]
-        public async Task UpdateAsync_ShouldReturnFalse_WhenNotFound(List<Trade> testData)
+        [Fact]
+        public async Task UpdateAsync_ShouldReturnFalse_WhenNotFound()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Trades.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
+            await SeedAsync(new List<Trade>());
             var updateDto = new TradeDto
             {
-                Account = "Account3",
-                AccountType = "Type3",
-                BuyQuantity = 300,
-                SellQuantity = 250,
-                BuyPrice = 20.5,
-                SellPrice = 30.5,
+                Account = "Account2",
+                AccountType = "Type2",
+                BuyQuantity = 200,
+                SellQuantity = 150,
+                BuyPrice = 15.5,
+                SellPrice = 25.5,
                 TradeDate = DateTime.Now,
-                TradeSecurity = "Security3",
-                TradeStatus = "Status3",
-                Trader = "Trader3",
-                Benchmark = "Benchmark3",
-                Book = "Book3",
-                CreationName = "Creator3",
+                TradeSecurity = "Security2",
+                TradeStatus = "Status2",
+                Trader = "Trader2",
+                Benchmark = "Benchmark2",
+                Book = "Book2",
+                CreationName = "Creator2",
                 CreationDate = DateTime.Now,
-                RevisionName = "Reviser3",
+                RevisionName = "Reviser2",
                 RevisionDate = DateTime.Now,
-                DealName = "Deal3",
-                DealType = "TypeC",
-                SourceListId = "Source3",
-                Side = "Buy"
+                DealName = "Deal2",
+                DealType = "TypeB",
+                SourceListId = "Source2",
+                Side = "Sell"
             };
 
-            // Act
-            var result = await _repository.UpdateAsync(-1, updateDto); // Use an ID that doesn't exist
-
-            // Assert
-            result.Should().Be(false);
+            var result = await _repository.UpdateAsync(-1, updateDto);
+            result.Should().BeFalse();
         }
-
 
         // Testing DeleteAsync
         [Theory]
         [MemberData(nameof(TradeTestData.GetTradesScenarios), MemberType = typeof(TradeTestData))]
         public async Task DeleteAsync_ShouldRemoveTrade(List<Trade> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Trades.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedAsync(testData);
+            var existingTrade = testData.FirstOrDefault(b => b.TradeId > 0);
 
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
+            if (existingTrade == null) return;
 
-            var existingTrade = testData.First();
-
-            // Act
             var result = await _repository.DeleteAsync(existingTrade.TradeId);
+            result.Should().BeTrue();
 
-            // Assert
-            result.Should().Be(true);
-            var deletedTrade = await _context.Trades.FindAsync(existingTrade.TradeId);
+            var deletedTrade = await _fixture.Context.Trades.FindAsync(existingTrade.TradeId);
             deletedTrade.Should().BeNull();
         }
 
-        [Theory]
-        [MemberData(nameof(TradeTestData.GetTradesScenarios), MemberType = typeof(TradeTestData))]
-        public async Task DeleteAsync_ShouldReturnFalse_WhenNotFound(List<Trade> testData)
+        [Fact]
+        public async Task DeleteAsync_ShouldReturnFalse_WhenNotFound()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.Trades.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            // Act
-            var result = await _repository.DeleteAsync(-1); // Use an ID that doesn't exist
-
-            // Assert
-            result.Should().Be(false);
+            await SeedAsync(new List<Trade>());
+            var result = await _repository.DeleteAsync(-1);
+            result.Should().BeFalse();
         }
 
         public void Dispose()
         {
-            _context?.Dispose();
+            ClearDatabase();
         }
     }
 }

@@ -3,26 +3,40 @@ using FindexiumAPI.Domain;
 using FindexiumAPI.Models;
 using FindexiumAPI.Repositories;
 using FindexiumAPI.Tests.TestData;
+using FindexiumAPI.Tests.TestUtilities;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace FindexiumAPI.Tests.RepositoriesTests
 {
-    public class BidListRepositoryTests : IDisposable
+    public class BidListRepositoryTests : IClassFixture<LocalDbFixture>, IDisposable
     {
-        private LocalDbContext _context;
+        private readonly LocalDbFixture _fixture;
         private readonly IBidListRepository _repository;
 
-        public BidListRepositoryTests()
+        // The constructor initializes the repository with the in-memory database context provided by the fixture.
+        // It also ensures that the database is cleared before each test run to maintain test isolation.
+        public BidListRepositoryTests(LocalDbFixture fixture)
         {
-            // Create a new in-memory database for each test
-            var options = new DbContextOptionsBuilder<LocalDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-                .Options;
+            _fixture = fixture;
+            _repository = new BidListRepository(_fixture.Context);
+            ClearDatabase();
+        }
 
-            _context = new LocalDbContext(options);
-            _repository = new BidListRepository(_context);
+        private void ClearDatabase()
+        {
+            _fixture.Context.BidLists.RemoveRange(_fixture.Context.BidLists);
+            _fixture.Context.SaveChanges();
+        }
+
+        // The SeedAsync method is a helper function that populates the in-memory database with test data before each test case.
+        // It first clears the database to ensure a clean state, then adds the provided list of BidList entities and saves the changes.
+        private async Task SeedAsync(List<BidList> data)
+        {
+            ClearDatabase();
+            await _fixture.Context.BidLists.AddRangeAsync(data);
+            await _fixture.Context.SaveChangesAsync();
         }
 
 
@@ -31,117 +45,77 @@ namespace FindexiumAPI.Tests.RepositoriesTests
         [MemberData(nameof(BidListTestData.GetBidListsScenarios), MemberType = typeof(BidListTestData))]
         public async Task GetAllAsync_ShouldReturnExpectedDtos(List<BidList> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.BidLists.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            // Act
+            await SeedAsync(testData);
             var result = await _repository.GetAllAsync();
 
-            // Assert
-            result.Should().NotBeNull();
             result.Should().HaveCount(testData.Count);
-            result.Should().BeEquivalentTo(
-                testData,
-                options => options
-                    .ExcludingMissingMembers()
-            );
+            if (testData.Count > 0)
+            {
+                result.Should().BeEquivalentTo(
+                    testData,
+                    options => options.ExcludingMissingMembers()
+                );
+            }
+            else
+                result.Should().BeEmpty();
         }
 
-
-        // Testing GetByIdAsync
+        // Testing GetByIdAsync - Existing
         [Theory]
         [MemberData(nameof(BidListTestData.GetBidListsScenarios), MemberType = typeof(BidListTestData))]
         public async Task GetByIdAsync_ShouldReturnExpectedDto(List<BidList> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.BidLists.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedAsync(testData);
 
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
-
-            // Act & Assert
-            foreach (var bidList in testData)
+            foreach (var bidList in testData.Where(b => b.BidListId > 0))
             {
                 var result = await _repository.GetByIdAsync(bidList.BidListId);
                 result.Should().NotBeNull();
                 result.Should().BeEquivalentTo(
                     bidList,
-                    options => options
-                        .ExcludingMissingMembers()
+                    options => options.ExcludingMissingMembers()
                 );
             }
-
         }
 
-        [Theory]
-        [MemberData(nameof(BidListTestData.GetBidListsScenarios), MemberType = typeof(BidListTestData))]
-        public async Task GetByIdAsync_ShouldReturnNull_WhenNotFound(List<BidList> testData)
+        [Fact]
+        public async Task GetByIdAsync_ShouldReturnNull_WhenNotFound()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.BidLists.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            // Act
-            var result = await _repository.GetByIdAsync(-1); // Use an ID that doesn't exist
-
-            // Assert
+            await SeedAsync(new List<BidList>());
+            var result = await _repository.GetByIdAsync(-1);
             result.Should().BeNull();
         }
 
-
         // Testing CreateAsync
-        [Fact]
-        public async Task CreateAsync_ShouldAddNewBidList()
+        [Theory]
+        [MemberData(nameof(BidListTestData.GetBidListDtosForCreate), MemberType = typeof(BidListTestData))]
+        public async Task CreateAsync_ShouldAddNewBidList(BidListDto testDto)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
+            await SeedAsync(new List<BidList>());
 
-            var testDto = new BidListDto
-            {
-                Account = "TestAccount",
-                BidType = "TestType",
-                BidQuantity = 123
-            };
-
-            // Act
             var createdBidList = await _repository.AddAsync(testDto);
 
-            // Assert
             createdBidList.Should().NotBeNull();
             createdBidList.BidListId.Should().BePositive();
             createdBidList.Should().BeEquivalentTo(testDto, options => options
-             .Excluding(b => b.BidListId)
-             .ExcludingMissingMembers()
+                .Excluding(b => b.BidListId)
+                .ExcludingMissingMembers()
             );
 
-            var dbCount = await _context.BidLists.CountAsync();
+            var dbCount = await _fixture.Context.BidLists.CountAsync();
             dbCount.Should().Be(1);
         }
-
 
         // Testing UpdateAsync
         [Theory]
         [MemberData(nameof(BidListTestData.GetBidListsScenarios), MemberType = typeof(BidListTestData))]
         public async Task UpdateAsync_ShouldModifyExistingBidList(List<BidList> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.BidLists.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedAsync(testData);
+            var existingBidList = testData.FirstOrDefault(b => b.BidListId > 0);
 
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
+            if (existingBidList == null) return;
 
-            var existingBidList = testData.First();
             var updateDto = new BidListDto
             {
                 Account = "UpdatedAccount",
@@ -149,28 +123,21 @@ namespace FindexiumAPI.Tests.RepositoriesTests
                 BidQuantity = 999
             };
 
-            // Act
             var result = await _repository.UpdateAsync(existingBidList.BidListId, updateDto);
+            result.Should().BeTrue();
 
-            // Assert
-            result.Should().Be(true);
-            var updatedBidList = await _context.BidLists.FindAsync(existingBidList.BidListId);
+            var updatedBidList = await _fixture.Context.BidLists.FindAsync(existingBidList.BidListId);
             updatedBidList.Should().NotBeNull();
             updatedBidList.Should().BeEquivalentTo(updateDto, options => options
-             .Excluding(b => b.BidListId)
-             .ExcludingMissingMembers()
+                .Excluding(b => b.BidListId)
+                .ExcludingMissingMembers()
             );
         }
 
-        [Theory]
-        [MemberData(nameof(BidListTestData.GetBidListsScenarios), MemberType = typeof(BidListTestData))]
-        public async Task UpdateAsync_ShouldReturnFalse_WhenNotFound(List<BidList> testData)
+        [Fact]
+        public async Task UpdateAsync_ShouldReturnFalse_WhenNotFound()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.BidLists.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
+            await SeedAsync(new List<BidList>());
             var updateDto = new BidListDto
             {
                 Account = "UpdatedAccount",
@@ -178,59 +145,38 @@ namespace FindexiumAPI.Tests.RepositoriesTests
                 BidQuantity = 999
             };
 
-            // Act
-            var result = await _repository.UpdateAsync(-1, updateDto); // Use an ID that doesn't exist
-
-            // Assert
-            result.Should().Be(false);
+            var result = await _repository.UpdateAsync(-1, updateDto);
+            result.Should().BeFalse();
         }
-
 
         // Testing DeleteAsync
         [Theory]
         [MemberData(nameof(BidListTestData.GetBidListsScenarios), MemberType = typeof(BidListTestData))]
         public async Task DeleteAsync_ShouldRemoveBidList(List<BidList> testData)
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.BidLists.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
+            await SeedAsync(testData);
+            var existingBidList = testData.FirstOrDefault(b => b.BidListId > 0);
 
-            if (testData.Count == 0)
-            {
-                return; // Skip the test if there's no data to test
-            }
+            if (existingBidList == null) return;
 
-            var existingBidList = testData.First();
-
-            // Act
             var result = await _repository.DeleteAsync(existingBidList.BidListId);
+            result.Should().BeTrue();
 
-            // Assert
-            result.Should().Be(true);
-            var deletedBidList = await _context.BidLists.FindAsync(existingBidList.BidListId);
+            var deletedBidList = await _fixture.Context.BidLists.FindAsync(existingBidList.BidListId);
             deletedBidList.Should().BeNull();
         }
 
-        [Theory]
-        [MemberData(nameof(BidListTestData.GetBidListsScenarios), MemberType = typeof(BidListTestData))]
-        public async Task DeleteAsync_ShouldReturnFalse_WhenNotFound(List<BidList> testData)
+        [Fact]
+        public async Task DeleteAsync_ShouldReturnFalse_WhenNotFound()
         {
-            // Arrange
-            _context.Database.EnsureCreated();
-            await _context.BidLists.AddRangeAsync(testData);
-            await _context.SaveChangesAsync();
-
-            // Act
-            var result = await _repository.DeleteAsync(-1); // Use an ID that doesn't exist
-
-            // Assert
-            result.Should().Be(false);
+            await SeedAsync(new List<BidList>());
+            var result = await _repository.DeleteAsync(-1);
+            result.Should().BeFalse();
         }
 
         public void Dispose()
         {
-            _context?.Dispose();
+            ClearDatabase();
         }
     }
 }
