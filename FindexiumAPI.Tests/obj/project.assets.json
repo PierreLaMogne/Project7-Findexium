@@ -1158,6 +1158,9 @@
           }
         }
       },
+      "NSubstitute.Analyzers.CSharp/1.0.17": {
+        "type": "package"
+      },
       "NuGet.Frameworks/5.11.0": {
         "type": "package",
         "compile": {
@@ -5007,6 +5010,23 @@
         "lib/netstandard2.0/NSubstitute.xml",
         "nsubstitute.5.3.0.nupkg.sha512",
         "nsubstitute.nuspec"
+      ]
+    },
+    "NSubstitute.Analyzers.CSharp/1.0.17": {
+      "sha512": "Pwz0MD7CAM/G/fvJjM3ceOfI+S0IgjanHcK7evwyrW9qAWUG8fgiEXYfSX1/s3h2JUNDOw6ik0G8zp+RT61Y1g==",
+      "type": "package",
+      "path": "nsubstitute.analyzers.csharp/1.0.17",
+      "hasTools": true,
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.md",
+        "analyzers/dotnet/cs/NSubstitute.Analyzers.CSharp.dll",
+        "analyzers/dotnet/cs/NSubstitute.Analyzers.Shared.dll",
+        "nsubstitute.analyzers.csharp.1.0.17.nupkg.sha512",
+        "nsubstitute.analyzers.csharp.nuspec",
+        "tools/install.ps1",
+        "tools/uninstall.ps1"
       ]
     },
     "NuGet.Frameworks/5.11.0": {
@@ -9296,6 +9316,7 @@
       "Microsoft.EntityFrameworkCore.InMemory >= 6.0.36",
       "Microsoft.NET.Test.Sdk >= 17.1.0",
       "NSubstitute >= 5.3.0",
+      "NSubstitute.Analyzers.CSharp >= 1.0.17",
       "coverlet.collector >= 3.1.2",
       "xunit >= 2.4.1",
       "xunit.runner.visualstudio >= 2.4.3"
@@ -9370,6 +9391,12 @@
           "NSubstitute": {
             "target": "Package",
             "version": "[5.3.0, )"
+          },
+          "NSubstitute.Analyzers.CSharp": {
+            "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+            "suppressParent": "All",
+            "target": "Package",
+            "version": "[1.0.17, )"
           },
           "coverlet.collector": {
             "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",

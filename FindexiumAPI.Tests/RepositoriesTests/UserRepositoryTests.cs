@@ -158,6 +158,39 @@ namespace FindexiumAPI.Tests.RepositoriesTests
             createdUser.UserName.Should().Be(testDto.UserName);
         }
 
+        [Fact]
+        public async Task CreateUserAsync_ShouldReturnFail_WhenUserCreationFails()
+        {
+            // Arrange
+            var user = new User
+            {
+                UserName = "uniqueuser",
+                FullName = "Unique User"
+            };
+            var dto = new CreateUserDto
+            {
+                UserName = "uniqueuser",
+                FullName = "Unique User",
+                Role = "Admin",
+                Password = "Bonjour123!",
+                ConfirmPassword = "Bonjour123!"
+            };
+
+            var existingUser = new User { UserName = dto.UserName, FullName = "Exists" };
+            await _fixture.Context.Users.AddAsync(existingUser);
+            await _fixture.Context.SaveChangesAsync();
+
+            // Act
+            var result = await _userRepository.CreateUserAsync(dto);
+
+            // Assert
+            result.Data.Should().BeNull();
+            result.Code.Should().Be("409");
+            result.ErrorMessage.Should().Contain("already exists");
+        }
+
+
+
 
         // Testing UpdateAsync
         [Theory]
@@ -204,6 +237,29 @@ namespace FindexiumAPI.Tests.RepositoriesTests
             // Assert
             result.Code.Should().Be("404");
             result.ErrorMessage.Should().Be("The Id mentioned can't be found.");
+        }
+
+        [Fact]
+        public async Task UpdateAsync_ShouldReturnBadRequest_WhenUserIdAndDtoIdMismatch()
+        {
+            // Arrange - Seed a user to update
+            var existingUser = new User { UserName = "testuser", FullName = "Test User" };
+            await _fixture.Context.Users.AddAsync(existingUser);
+            await _fixture.Context.SaveChangesAsync();
+            var updateDto = new UserDto
+            {
+                Id = Guid.Empty.ToString(), // Mismatching Id
+                UserName = "updateduser",
+                FullName = "Updated User",
+                Role = "User"
+            };
+
+            // Act
+            var result = await _userRepository.UpdateUserAsync(existingUser.Id, updateDto);
+
+            // Assert
+            result.Code.Should().Be("400");
+            result.ErrorMessage.Should().Be("The Id focused and the Id mentioned are different.");
         }
 
 

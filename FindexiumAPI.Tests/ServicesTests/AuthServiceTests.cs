@@ -4,6 +4,7 @@ using FindexiumAPI.Services;
 using FindexiumAPI.Tests.ServicesTests;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
 using Xunit;
 
 namespace FindexiumAPI.Tests.ServicesTests
@@ -19,17 +20,14 @@ namespace FindexiumAPI.Tests.ServicesTests
             // Arrange
             using var scope = AuthServiceTestHelper.CreateCleanScope();
             var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-
-            if (shouldSucceed) // Define the user only if the test should succeed
+            
+            await authService.Register(new RegisterDto
             {
-                await authService.Register(new RegisterDto
-                {
-                    UserName = "testuser",
-                    FullName = "Test User",
-                    Password = "Password123!",
-                    ConfirmPassword = "Password123!"
-                });
-            }
+                UserName = "testuser",
+                FullName = "Test User",
+                Password = "Password123!",
+                ConfirmPassword = "Password123!"
+            });
 
             // Act
             var result = await authService.Authenticate(new LoginDto

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "+BQJR/kjhLI=",
+  "dgSpecHash": "ETQtDKqcidM=",
   "success": true,
   "projectFilePath": "C:\\Users\\pierr\\Documents\\Formation OpenClassrooms\\FindexiumAPI\\FindexiumAPI.Tests\\FindexiumAPI.Tests.csproj",
   "expectedPackageFiles": [
@@ -58,6 +58,7 @@
     "C:\\Users\\pierr\\.nuget\\packages\\netstandard.library\\1.6.1\\netstandard.library.1.6.1.nupkg.sha512",
     "C:\\Users\\pierr\\.nuget\\packages\\newtonsoft.json\\9.0.1\\newtonsoft.json.9.0.1.nupkg.sha512",
     "C:\\Users\\pierr\\.nuget\\packages\\nsubstitute\\5.3.0\\nsubstitute.5.3.0.nupkg.sha512",
+    "C:\\Users\\pierr\\.nuget\\packages\\nsubstitute.analyzers.csharp\\1.0.17\\nsubstitute.analyzers.csharp.1.0.17.nupkg.sha512",
     "C:\\Users\\pierr\\.nuget\\packages\\nuget.frameworks\\5.11.0\\nuget.frameworks.5.11.0.nupkg.sha512",
     "C:\\Users\\pierr\\.nuget\\packages\\runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl\\4.3.0\\runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
     "C:\\Users\\pierr\\.nuget\\packages\\runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl\\4.3.0\\runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",

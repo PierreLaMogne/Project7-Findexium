@@ -88,14 +88,14 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetUsers();
 
             // Assert
-            if (role == "Admin" ||role == "User")
+            if (role == "Admin" || role == "User")
             {
                 var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
                 Assert.Equal("No User found.", notFoundResult.Value);
             }
             else
                 Assert.IsType<UnauthorizedResult>(result.Result);
-           
+
 
         }
 
@@ -121,7 +121,7 @@ namespace FindexiumAPI.Tests.Controllers
                 result = await controller.GetUser(1.ToString());
 
             // Assert
-            if (role == "Admin" ||role == "User")
+            if (role == "Admin" || role == "User")
             {
                 var okResult = Assert.IsType<OkObjectResult>(result.Result);
                 var user = Assert.IsAssignableFrom<UserDto>(okResult.Value);
@@ -173,8 +173,8 @@ namespace FindexiumAPI.Tests.Controllers
             repo.CreateUserAsync(Arg.Any<CreateUserDto>()).Returns(callInfo =>
                 {
                     var dto = callInfo.Arg<CreateUserDto>();
-                    return Result<UserDto>.Ok(new UserDto 
-                    { 
+                    return Result<UserDto>.Ok(new UserDto
+                    {
                         Id = 1.ToString(),
                         UserName = dto.UserName,
                         FullName = dto.FullName,
@@ -247,6 +247,78 @@ namespace FindexiumAPI.Tests.Controllers
                 Assert.IsType<UnauthorizedResult>(result.Result);
         }
 
+        [Theory]
+        [InlineData("Admin")]
+        [InlineData("User")]
+        [InlineData("Unauthenticated")]
+        public async Task PostUser_AsDifferentRoles_WhenUsernameAlreadyExists_ReturnsConflict(string? role)
+        {
+            // Arrange
+            var repo = Substitute.For<IUserRepository>();
+            repo.CreateUserAsync(Arg.Any<CreateUserDto>()).Returns(Result<UserDto>.Fail("Username already exists.", "409")); // Mocking the repository to return a failure result for any input DTO
+            var controller = CreateControllerWithRole(role, repo);
+            var newUser = new CreateUserDto()
+            {
+                UserName = "abc",
+                FullName = "Abc",
+                Role = "Admin",
+                Password = "Bonjour123!",
+                ConfirmPassword = "Bonjour123!"
+            };
+            // Act
+            ActionResult<UserDto> result;
+            // Simulate [Authorize(Roles = "Admin")] behavior in unit tests
+            if (!controller.IsAuthorizedAsAdmin())
+                result = new ActionResult<UserDto>(new UnauthorizedResult());
+            else
+                result = await controller.PostUser(newUser);
+            // Assert
+            if (role == "Admin")
+            {
+                var conflictResult = Assert.IsType<ConflictObjectResult>(result.Result);
+                Assert.Equal("Username already exists.", conflictResult.Value);
+            }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);
+        }
+
+        [Theory]
+        [InlineData("Admin")]
+        [InlineData("User")]
+        [InlineData("Unauthenticated")]
+        public async Task PostUser_AsDifferentRoles_WhenUsernameCreationFails_ReturnsBadRequest(string? role)
+        {
+            // Arrange
+            var repo = Substitute.For<IUserRepository>();
+            repo.CreateUserAsync(Arg.Any<CreateUserDto>()).Returns(Result<UserDto>.Fail("Failed to create user.", "400")); // Mocking the repository to return a failure result for any input DTO
+            var controller = CreateControllerWithRole(role, repo);
+            var newUser = new CreateUserDto()
+            {
+                UserName = "abc",
+                FullName = "Abc",
+                Role = "Admin",
+                Password = "Bonjour123!",
+                ConfirmPassword = "Bonjour123!"
+            };
+            // Act
+            ActionResult<UserDto> result;
+
+            // Simulate [Authorize(Roles = "Admin")] behavior in unit tests
+            if (!controller.IsAuthorizedAsAdmin())
+                result = new ActionResult<UserDto>(new UnauthorizedResult());
+            else
+                result = await controller.PostUser(newUser);
+
+            // Assert
+            if (role == "Admin")
+            {
+                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+                Assert.Equal("Failed to create user.", badRequestResult.Value);
+            }
+            else
+                Assert.IsType<UnauthorizedResult>(result.Result);
+        }
+
         // Tests for PutUser
         [Theory]
         [InlineData("Admin")]
@@ -260,7 +332,7 @@ namespace FindexiumAPI.Tests.Controllers
             repo.UpdateUserAsync(1.ToString(), Arg.Any<UserDto>()).Returns(Result<UserDto>.Ok(new UserDto { Id = 1.ToString() })); // Mocking the repository to return an updated user for the specified ID
             var controller = CreateControllerWithRole(role, repo);
 
-            var updatedUser = new UserDto { Id = 1.ToString(), UserName = "def_updated", FullName = "Def Updated", Role = ""};
+            var updatedUser = new UserDto { Id = 1.ToString(), UserName = "def_updated", FullName = "Def Updated", Role = "" };
 
             // Act
             IActionResult result;
@@ -373,6 +445,70 @@ namespace FindexiumAPI.Tests.Controllers
                 Assert.IsType<UnauthorizedResult>(result);
         }
 
+        [Theory]
+        [InlineData("Admin")]
+        [InlineData("User")]
+        [InlineData("Unauthenticated")]
+        public async Task PutUser_AsDifferentRoles_WhenUserNameAlreadyExists_ReturnsConflict(string? role)
+        {
+            // Arrange
+            var repo = Substitute.For<IUserRepository>();
+            repo.GetUserByIdAsync(1.ToString()).Returns(new UserDto { Id = 1.ToString() }); // Mocking the repository to return a user for the specified ID
+            repo.UpdateUserAsync(1.ToString(), Arg.Any<UserDto>()).Returns(Result<UserDto>.Fail("Username already exists.", "409")); // Mocking the repository to return a failure result for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
+            var updatedUser = new UserDto { Id = 1.ToString(), UserName = "def_updated", FullName = "Def Updated", Role = "" };
+
+            // Act
+            IActionResult result;
+
+            // Simulate [Authorize(Roles = "Admin")] behavior in unit tests
+            if (!controller.IsAuthorizedAsAdmin())
+                result = new UnauthorizedResult();
+            else
+                result = await controller.PutUser(1.ToString(), updatedUser);
+
+            // Assert
+            if (role == "Admin")
+            {
+                var conflictResult = Assert.IsType<ConflictObjectResult>(result);
+                Assert.Equal("Username already exists.", conflictResult.Value);
+            }
+            else
+                Assert.IsType<UnauthorizedResult>(result);
+        }
+
+        [Theory]
+        [InlineData("Admin")]
+        [InlineData("User")]
+        [InlineData("Unauthenticated")]
+        public async Task PutUser_AsDifferentRoles_WhenUpdateFails_ReturnsBadRequest(string? role)
+        {
+            // Arrange
+            var repo = Substitute.For<IUserRepository>();
+            repo.GetUserByIdAsync(1.ToString()).Returns(new UserDto { Id = 1.ToString() }); // Mocking the repository to return a user for the specified ID
+            repo.UpdateUserAsync(1.ToString(), Arg.Any<UserDto>()).Returns(Result<UserDto>.Fail("Failed to update user.", "400")); // Mocking the repository to return a failure result for the specified ID
+            var controller = CreateControllerWithRole(role, repo);
+            var updatedUser = new UserDto { Id = 1.ToString(), UserName = "def_updated", FullName = "Def Updated", Role = "" };
+
+            // Act
+            IActionResult result;
+
+            // Simulate [Authorize(Roles = "Admin")] behavior in unit tests
+            if (!controller.IsAuthorizedAsAdmin())
+                result = new UnauthorizedResult();
+            else
+                result = await controller.PutUser(1.ToString(), updatedUser);
+
+            // Assert
+            if (role == "Admin")
+            {
+                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+                Assert.Equal("Failed to update user.", badRequestResult.Value);
+            }
+            else
+                Assert.IsType<UnauthorizedResult>(result);
+        }
+
         // Tests for DeleteUser
         [Theory]
         [InlineData("Admin")]
@@ -428,6 +564,37 @@ namespace FindexiumAPI.Tests.Controllers
             {
                 var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
                 Assert.Equal("The Id mentioned does not exist.", notFoundResult.Value);
+            }
+            else
+                Assert.IsType<UnauthorizedResult>(result);
+        }
+
+        [Theory]
+        [InlineData("Admin")]
+        [InlineData("User")]
+        [InlineData("Unauthenticated")]
+        public async Task DeleteUser_AsDifferentRoles_WhenDeletationFails_ReturnsBadRequest(string? role)
+        {
+            // Arrange
+            var repo = Substitute.For<IUserRepository>();
+            repo.GetUserByIdAsync(1.ToString()).Returns(new UserDto { Id = 1.ToString() }); // Mocking the repository to return a user for the specified ID
+            repo.DeleteUserAsync(Arg.Any<string>()).Returns(Task.FromResult(Result<bool>.Fail("Failed to delete user.", "400"))); // Mocking the repository to return a failure deletion result for any ID
+            var controller = CreateControllerWithRole(role, repo);
+
+            // Act
+            IActionResult result;
+
+            // Simulate [Authorize(Roles = "Admin")] behavior in unit tests
+            if (!controller.IsAuthorizedAsAdmin())
+                result = new UnauthorizedResult();
+            else
+                result = await controller.DeleteUser(1.ToString());
+
+            // Assert
+            if (role == "Admin")
+            {
+                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+                Assert.Equal("Failed to delete user.", badRequestResult.Value);
             }
             else
                 Assert.IsType<UnauthorizedResult>(result);
