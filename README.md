@@ -1,4 +1,4 @@
-# DotNetEnglishP7
+# Findexium API
 Student repo for Project 7 of the Back-end developer: .NET path
 
 The project requires the creation of a database using the Entity Framework Code-First approach. 
